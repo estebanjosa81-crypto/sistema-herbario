@@ -81,30 +81,35 @@ router.post('/upload', authenticateTokenMiddleware, (req, res) => {
         publicId = filename;
       }
 
-      // Registrar en la base de datos
-      const [result] = await db.query(
-        `INSERT INTO uploads (
-          filename, original_name, file_path, file_size, mime_type,
-          uploaded_by, is_temporary, entity_type
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-        [
-          publicId,
-          req.file.originalname,
-          imageUrl,
-          req.file.size,
-          req.file.mimetype,
-          req.user ? req.user.id : null,
-          true,
-          'plant'
-        ]
-      );
-
-      logger.info(`Imagen registrada en BD: ID ${result.insertId}`);
+      // Registrar en la base de datos (no crítico — si falla la imagen igual se devuelve)
+      let dbId = null;
+      try {
+        const [result] = await db.query(
+          `INSERT INTO uploads (
+            filename, original_name, file_path, file_size, mime_type,
+            uploaded_by, is_temporary, entity_type
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            publicId,
+            req.file.originalname,
+            imageUrl,
+            req.file.size,
+            req.file.mimetype,
+            req.user ? req.user.id : null,
+            true,
+            'plant'
+          ]
+        );
+        dbId = result.insertId;
+        logger.info(`Imagen registrada en BD: ID ${dbId}`);
+      } catch (dbError) {
+        logger.warn('No se pudo registrar imagen en BD (no crítico):', dbError.message);
+      }
 
       res.json({
         success: true,
         data: {
-          id: result.insertId,
+          id: dbId,
           url: imageUrl,
           thumbnailUrl: thumbnailUrl,
           filename: publicId,

@@ -347,6 +347,28 @@ CREATE TABLE pqrsdf (
     INDEX idx_email (email)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- ── posts ────────────────────────────────────────────────────────────────────
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    title VARCHAR(255) NOT NULL,
+    content LONGTEXT,
+    excerpt TEXT,
+    image_url VARCHAR(500),
+    category VARCHAR(50) DEFAULT 'publicacion',
+    tags VARCHAR(500),
+    status ENUM('draft','published','archived') DEFAULT 'draft',
+    views INT DEFAULT 0,
+    author_id INT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (author_id) REFERENCES users(id) ON DELETE SET NULL,
+    INDEX idx_status (status),
+    INDEX idx_category (category),
+    INDEX idx_author (author_id),
+    INDEX idx_created_at (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 SET FOREIGN_KEY_CHECKS = 1;
 
 -- ── Datos iniciales ───────────────────────────────────────────────────────────
