@@ -147,7 +147,7 @@ export default function PlantaDetalle({ params }: { params: Promise<RouteParams>
             familia: taxonomia.familia || data.family || "N/A",
             genero: taxonomia.genero || data.genus || "N/A",
             especie: taxonomia.epitetoEspecifico || data.specific_epithet || "N/A",
-            autor: data.author || "N/A",
+            autor: data.scientific_name_authorship || "N/A",
             nombreVernaculo: taxonomia.nombreVernacular || data.vernacular_name || "N/A",
             // Descripciones (si backend trae vacío, usamos fallback)
             descripcion: (caracteristicas.descripcion || data.description || "").trim() || "No hay descripción disponible",
@@ -162,7 +162,7 @@ export default function PlantaDetalle({ params }: { params: Promise<RouteParams>
             determino: data.determined_by || "N/A",
             fechaDeterminacion: data.determination_date || "N/A",
             colector: coleccion.registradoPor || data.recorded_by || "N/A",
-            numeroColector: data.collector_number || "N/A",
+            numeroColector: data.record_number || "N/A",
             fechaColeccion: coleccion.fechaEvento || data.event_date || "N/A",
             // Ubicación
             localizacion: ubicacion.localidad 

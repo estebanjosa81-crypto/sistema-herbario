@@ -524,12 +524,27 @@ class ApiService {
   
   // Obtener opciones para filtros
   async getFilterOptions(): Promise<ApiResponse<{
-    families: Array<{value: string, label: string}>;
-    departments: Array<{value: string, label: string}>;
-    municipalities: Array<{value: string, label: string}>;
-    collectors: Array<{value: string, label: string}>;
+    families:      Array<{value: string, label: string}>;
+    genera:        Array<{value: string, label: string}>;
+    departments:   Array<{value: string, label: string}>;
+    municipalities:Array<{value: string, label: string}>;
+    collectors:    Array<{value: string, label: string}>;
   }>> {
     return this.fetchApi('filters.getFilterOptions');
+  }
+
+  // Exportar especímenes filtrados como CSV
+  async exportPlants(filters?: {
+    search?: string; family?: string; genus?: string; species?: string;
+    department?: string; municipality?: string; collector?: string;
+    vernacular_name?: string; catalog_number?: string; record_number?: string;
+    habitat?: string;
+  }): Promise<ApiResponse<{ csv: string; filename: string; count: number; format: string }>> {
+    const token = this.getToken();
+    return this.fetchApi('plants.export', {
+      body: JSON.stringify(filters ?? {}),
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+    });
   }
 
   // Obtener familias

@@ -73,13 +73,19 @@ RATE_LIMIT_WINDOW_MS=300000
 - Toggle de contadores en admin panel ✓
 - Rate limiting razonable (500 req/5min) ✓
 
+## ✅ Nuevas features (post sesión 2026-06-02)
+
+- **Exportación CSV** del catálogo filtrado → `plants.export` service. Archivo: `backend/src/controllers/plants/exportData.js`. Botón visible en `/plantas` cuando hay filtros activos + resultados. 34 columnas DwC. Límite: 5000 filas por exportación. BOM UTF-8 para compatibilidad Excel. ✓
+- **Filtros avanzados mejorados** → opciones dinámicas desde `filters.getFilterOptions` (antes hardcodeadas). `getFilterOptions` corregida de `(req,res)` a `(data,user)`. ✓
+- **Mapa vacío por defecto** → no carga datos hasta que hay al menos un filtro activo. ✓
+- **Bugs DwC mapa** → `map-constants.ts`, `PlantMap.tsx`, `MapContainerInternal.tsx` corregidos con nombres correctos (`state_province`, `minimum_elevation_in_meters`, `plant_habit`, `scientific_name_authorship`, `record_number`). ✓
+- **Ficha de espécimen** → `data.author` corregido a `data.scientific_name_authorship`; `data.collector_number` a `data.record_number`; fechas "Invalid Date" protegidas con `fmtDate()`. ✓
+
 ## 🚧 Pendiente / En construcción
 
 - **Cloudinary**: `CLOUDINARY_API_KEY` y `CLOUDINARY_API_SECRET` vacíos → subida de imágenes falla
 - **Dominio real**: usar nip.io mientras no haya DNS propio configurado
-- `controllers/dashboard/dashboardController.js` → `getPlantsByLocation` usa `department`; `getTopCollectors` usa `collector_name` — activos pero con bugs DwC silenciosos
-- `app/admin/plantas/[id]/editar/page.tsx` — recarga de planta existente usa `getById` que devuelve formato diferente al esperado en algunos campos del estado DwC (pendiente verificar)
-- `app/admin/plantas/[id]/editar/page.tsx` — recarga de planta existente usa `getById` que devuelve formato diferente al esperado en algunos campos del estado DwC (pendiente verificar)
+- `app/admin/plantas/[id]/editar/page.tsx` — recarga de planta existente puede tener campos DwC pendientes de verificar en el estado del formulario
 - Sistema completo de subida de archivos — funciona con Cloudinary configurado
 - Redis cache activo en Docker pero backend usa node-cache
 - Tests unitarios e integración — carpeta existe, sin tests

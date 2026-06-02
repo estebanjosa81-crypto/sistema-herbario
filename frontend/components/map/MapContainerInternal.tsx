@@ -216,9 +216,9 @@ export default function MapContainerInternal({ plants, familyColorMap, onPlantCl
                       {plant.family}
                     </span>
 
-                    {(plant.municipality || plant.department) && (
+                    {(plant.municipality || plant.state_province) && (
                       <span className="popup-location">
-                        📍&nbsp;{[plant.municipality, plant.department].filter(Boolean).join(', ')}
+                        📍&nbsp;{[plant.municipality, plant.state_province].filter(Boolean).join(', ')}
                       </span>
                     )}
 
@@ -234,15 +234,15 @@ export default function MapContainerInternal({ plants, familyColorMap, onPlantCl
                       </span>
                     )}
 
-                    {plant.altitude != null && (
+                    {plant.minimum_elevation_in_meters != null && (
                       <span className="popup-altitude">
-                        ⛰&nbsp;{plant.altitude} msnm
+                        ⛰&nbsp;{plant.minimum_elevation_in_meters} msnm
                       </span>
                     )}
 
-                    {plant.habit && (
+                    {plant.plant_habit && (
                       <span className="popup-habit">
-                        🌿&nbsp;{plant.habit}
+                        🌿&nbsp;{plant.plant_habit}
                       </span>
                     )}
                   </div>

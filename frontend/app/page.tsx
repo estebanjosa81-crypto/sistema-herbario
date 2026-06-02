@@ -154,7 +154,7 @@ export default function Home() {
         <Button asChild size="lg" className="bg-green-600 hover:bg-green-700">
           <Link href={cta1Url}>{cta1Text} <ArrowRight className="ml-2 h-4 w-4" /></Link>
         </Button>
-        <Button asChild variant="outline" size="lg" className="border-white text-white hover:bg-white/10">
+        <Button asChild variant="outline" size="lg" className="bg-transparent border-white text-white hover:bg-white/20 hover:text-white">
           <Link href={cta2Url}>{cta2Text}</Link>
         </Button>
       </div>
@@ -336,12 +336,13 @@ export default function Home() {
               {/* ── Columna izquierda: carrusel de publicaciones / servicios ── */}
               {hero2Items.length > 0 && (
                 <div className="relative">
-                  <div className="relative overflow-hidden rounded-xl shadow-lg">
+                  <div className="grid rounded-xl shadow-lg overflow-hidden">
                     {hero2Items.map((item, i) => (
                       <div
                         key={i}
+                        style={{ gridArea: '1 / 1' }}
                         className={`transition-opacity duration-500 ${
-                          i === currentHero2 ? 'opacity-100 relative' : 'opacity-0 absolute inset-0'
+                          i === currentHero2 ? 'opacity-100 z-10 pointer-events-auto' : 'opacity-0 z-0 pointer-events-none'
                         }`}
                       >
                         <Card className="overflow-hidden border-0">

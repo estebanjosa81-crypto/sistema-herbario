@@ -9,11 +9,18 @@ const logger = require('../../utils/logger');
 const getForMap = async (data) => {
   try {
     const {
-      search     = '',
-      family     = '',
-      department = '',
+      search       = '',
+      family       = '',
+      department   = '',
       municipality = '',
-      limit      = 2000,
+      genus        = '',
+      species      = '',
+      collector    = '',
+      record_number   = '',
+      catalog_number  = '',
+      vernacular_name = '',
+      habitat      = '',
+      limit        = 2000,
     } = data || {};
 
     let whereConditions = [
@@ -31,9 +38,16 @@ const getForMap = async (data) => {
       queryParams.push(s, s, s);
     }
 
-    if (family)       { whereConditions.push('p.family = ?');          queryParams.push(family); }
-    if (department)   { whereConditions.push('p.state_province = ?');  queryParams.push(department); }
-    if (municipality) { whereConditions.push('p.municipality = ?');    queryParams.push(municipality); }
+    if (family)          { whereConditions.push('p.family LIKE ?');            queryParams.push(`%${family}%`); }
+    if (genus)           { whereConditions.push('p.genus LIKE ?');             queryParams.push(`%${genus}%`); }
+    if (species)         { whereConditions.push('p.specific_epithet LIKE ?');  queryParams.push(`%${species}%`); }
+    if (department)      { whereConditions.push('p.state_province LIKE ?');    queryParams.push(`%${department}%`); }
+    if (municipality)    { whereConditions.push('p.municipality LIKE ?');      queryParams.push(`%${municipality}%`); }
+    if (collector)       { whereConditions.push('p.recorded_by LIKE ?');       queryParams.push(`%${collector}%`); }
+    if (record_number)   { whereConditions.push('p.record_number LIKE ?');     queryParams.push(`%${record_number}%`); }
+    if (catalog_number)  { whereConditions.push('p.catalog_number LIKE ?');    queryParams.push(`%${catalog_number}%`); }
+    if (vernacular_name) { whereConditions.push('(p.vernacular_name LIKE ? OR p.common_name LIKE ?)'); queryParams.push(`%${vernacular_name}%`, `%${vernacular_name}%`); }
+    if (habitat)         { whereConditions.push('p.habitat LIKE ?');           queryParams.push(`%${habitat}%`); }
 
     const whereClause = `WHERE ${whereConditions.join(' AND ')}`;
 

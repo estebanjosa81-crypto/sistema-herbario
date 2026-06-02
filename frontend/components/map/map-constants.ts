@@ -8,18 +8,18 @@ export interface PlantMapData {
   family: string
   decimal_latitude: number
   decimal_longitude: number
-  department?: string
+  state_province?: string
   municipality?: string
   recorded_by?: string
   event_date?: string
   catalog_number?: string
-  altitude?: number | null
-  habit?: string
+  minimum_elevation_in_meters?: number | null
+  plant_habit?: string
   image?: string
   status?: string
   genus?: string
-  collector_number?: string
-  author?: string
+  record_number?: string
+  scientific_name_authorship?: string
   conservation_status?: string
   has_uses?: number
 }

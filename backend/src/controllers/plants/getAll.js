@@ -16,7 +16,9 @@ const getAll = async (data) => {
       collector = '',
       vernacular_name = '',
       catalog_number = '',
-      status = 'published' // Por defecto solo plantas publicadas
+      record_number = '',
+      habitat = '',
+      status = 'published'
     } = data || {};
 
     const offset = (page - 1) * limit;
@@ -45,13 +47,13 @@ const getAll = async (data) => {
     }
 
     if (family) {
-      whereConditions.push('family = ?');
-      queryParams.push(family);
+      whereConditions.push('family LIKE ?');
+      queryParams.push(`%${family}%`);
     }
 
     if (genus) {
-      whereConditions.push('genus = ?');
-      queryParams.push(genus);
+      whereConditions.push('genus LIKE ?');
+      queryParams.push(`%${genus}%`);
     }
 
     if (species) {
@@ -60,13 +62,13 @@ const getAll = async (data) => {
     }
 
     if (department) {
-      whereConditions.push('state_province = ?');
-      queryParams.push(department);
+      whereConditions.push('state_province LIKE ?');
+      queryParams.push(`%${department}%`);
     }
 
     if (municipality) {
-      whereConditions.push('municipality = ?');
-      queryParams.push(municipality);
+      whereConditions.push('municipality LIKE ?');
+      queryParams.push(`%${municipality}%`);
     }
 
     if (collector) {
@@ -82,6 +84,16 @@ const getAll = async (data) => {
     if (catalog_number) {
       whereConditions.push('catalog_number LIKE ?');
       queryParams.push(`%${catalog_number}%`);
+    }
+
+    if (record_number) {
+      whereConditions.push('record_number LIKE ?');
+      queryParams.push(`%${record_number}%`);
+    }
+
+    if (habitat) {
+      whereConditions.push('habitat LIKE ?');
+      queryParams.push(`%${habitat}%`);
     }
 
     const whereClause = whereConditions.length > 0 

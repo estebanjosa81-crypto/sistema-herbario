@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react"
 import { useRouter } from "next/navigation"
-import { Search, X, Map, List, Camera, ChevronUp, ChevronDown, ChevronsUpDown, Eye } from "lucide-react"
+import { Search, X, Map, List, Camera, ChevronUp, ChevronDown, ChevronsUpDown, Eye, Download, Loader2 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -86,28 +86,62 @@ export default function PlantasPage() {
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
   const [tablePage, setTablePage] = useState(1)
   const [tablePageSize, setTablePageSize] = useState(25)
+  const [exporting, setExporting] = useState(false)
+
+  // ── Mapeo campos filtros → parámetros backend ─────────────────────────────
+  const FIELD_MAP: Record<string, string> = {
+    genero:          'genus',
+    especie:         'species',
+    departamento:    'department',
+    municipio:       'municipality',
+    nombreComun:     'vernacular_name',
+    colector:        'collector',
+    numeroCatalogo:  'catalog_number',
+    numeroRegistro:  'record_number',
+    habitat:         'habitat',
+  }
+
+  const buildFilterParams = () => {
+    const p: Record<string, string> = {}
+    if (searchTerm.trim())                                  p.search       = searchTerm.trim()
+    if (familiaFilter && familiaFilter !== 'todas')         p.family       = familiaFilter
+    advancedFilters.forEach(f => { const k = FIELD_MAP[f.field] ?? f.field; p[k] = f.value })
+    return p
+  }
+
+  // ── Exportar CSV ──────────────────────────────────────────────────────────
+  const handleExport = async () => {
+    setExporting(true)
+    try {
+      const res = await apiService.exportPlants(buildFilterParams())
+      if (res.success && res.data) {
+        const blob = new Blob([res.data.csv], { type: 'text/csv;charset=utf-8;' })
+        const url  = URL.createObjectURL(blob)
+        const a    = document.createElement('a')
+        a.href     = url
+        a.download = res.data.filename
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        URL.revokeObjectURL(url)
+      } else {
+        alert(res.error ?? 'Error al exportar')
+      }
+    } catch (e: any) {
+      alert(e.message ?? 'Error de red al exportar')
+    } finally {
+      setExporting(false)
+    }
+  }
 
   // Función para cargar plantas desde la API
   const loadPlants = async (params: any = {}) => {
     setLoading(true)
     try {
-      // Construir parámetros de filtros avanzados para el backend
       const advancedFiltersParams: any = {}
-      advancedFilters.forEach((filter) => {
-        // Mapear los campos del frontend a los campos del backend
-        const fieldMapping: Record<string, string> = {
-          familia: 'family',
-          genero: 'genus', 
-          especie: 'species',
-          departamento: 'department',
-          municipio: 'municipality',
-          nombreComun: 'vernacular_name',
-          colector: 'collector',
-          numeroColector: 'catalog_number'
-        }
-        
-        const backendField = fieldMapping[filter.field] || filter.field
-        advancedFiltersParams[backendField] = filter.value
+      advancedFilters.forEach(f => {
+        const key = FIELD_MAP[f.field] ?? f.field
+        advancedFiltersParams[key] = f.value
       })
 
       const response = await apiService.getPlants({
@@ -222,21 +256,10 @@ export default function PlantasPage() {
   const loadMapPlants = async () => {
     setMapLoading(true)
     try {
-      // Construir parámetros de filtros avanzados para el backend
       const advancedFiltersParams: any = {}
-      advancedFilters.forEach((filter) => {
-        const fieldMapping: Record<string, string> = {
-          familia: 'family',
-          genero: 'genus',
-          especie: 'species',
-          departamento: 'department',
-          municipio: 'municipality',
-          nombreComun: 'vernacular_name',
-          colector: 'collector',
-          numeroColector: 'catalog_number'
-        }
-        const backendField = fieldMapping[filter.field] || filter.field
-        advancedFiltersParams[backendField] = filter.value
+      advancedFilters.forEach(f => {
+        const key = FIELD_MAP[f.field] ?? f.field
+        advancedFiltersParams[key] = f.value
       })
 
       const response = await apiService.getPlantsForMap({
@@ -260,11 +283,24 @@ export default function PlantasPage() {
     loadFamilies()
   }, [])
   useEffect(() => {
+    const hasFilters =
+      searchTerm.trim() !== '' ||
+      (familiaFilter !== '' && familiaFilter !== 'todas') ||
+      advancedFilters.length > 0
+
+    if (!hasFilters) {
+      setPlantas([])
+      setFilteredPlantas([])
+      setMapPlants([])
+      setPagination({ page: 1, limit: 12, total: 0, totalPages: 0, hasNext: false, hasPrev: false })
+      return
+    }
+
+    const delay = searchTerm ? 500 : 0
     const debounceTimer = setTimeout(() => {
       loadPlants()
       loadMapPlants()
-    }, searchTerm ? 500 : 0)
-
+    }, delay)
     return () => clearTimeout(debounceTimer)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage, searchTerm, familiaFilter, advancedFilters, dynamicLimit, paginationEnabled])
@@ -336,20 +372,22 @@ export default function PlantasPage() {
     return sortedMapPlants.slice(start, start + tablePageSize)
   }, [sortedMapPlants, tablePage, tablePageSize])
 
-  // Obtener el label para un campo dado
-  const getFieldLabel = (field: string) => {
-    const fieldLabels: Record<string, string> = {
-      familia: "Familia",
-      genero: "Género",
-      especie: "Especie",
-      departamento: "Departamento",
-      municipio: "Municipio",
-      nombreComun: "Nombre común",
-      colector: "Nombre del colector",
-      numeroColector: "Número del colector",
-    }
-    return fieldLabels[field] || field
-  }
+  const getFieldLabel = (field: string) => ({
+    genero:          "Género",
+    especie:         "Epíteto específico",
+    departamento:    "Departamento",
+    municipio:       "Municipio",
+    nombreComun:     "Nombre común / vernáculo",
+    colector:        "Colector",
+    numeroCatalogo:  "Nº catálogo",
+    numeroRegistro:  "Nº registro colector",
+    habitat:         "Hábitat",
+  } as Record<string,string>)[field] ?? field
+
+  const hasActiveFilters =
+    searchTerm.trim() !== '' ||
+    (familiaFilter !== '' && familiaFilter !== 'todas') ||
+    advancedFilters.length > 0
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -409,6 +447,23 @@ export default function PlantasPage() {
             Mapa
           </Button>
         </div>
+
+        {/* Botón exportar — visible solo cuando hay filtros y resultados */}
+        {hasActiveFilters && (plantas.length > 0 || mapPlants.length > 0) && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExport}
+            disabled={exporting}
+            className="gap-2 text-green-700 border-green-300 hover:bg-green-50"
+            title={`Exportar ${viewMode === 'map' ? mapPlants.length : plantas.length} especímenes como CSV`}
+          >
+            {exporting
+              ? <><Loader2 className="h-4 w-4 animate-spin" />Exportando…</>
+              : <><Download className="h-4 w-4" />Exportar CSV</>
+            }
+          </Button>
+        )}
       </div>
 
       {/* Filtros activos */}
@@ -448,14 +503,26 @@ export default function PlantasPage() {
         <>
           {/* Mapa */}
           <div className="mb-8">
-            {mapLoading ? (
+            {!hasActiveFilters ? (
+              /* Estado inicial — sin filtros activos */
+              <div className="h-[500px] rounded-lg border-2 border-dashed border-muted-foreground/20 bg-muted/20 flex flex-col items-center justify-center gap-4 text-muted-foreground">
+                <Search className="h-14 w-14 opacity-20" />
+                <div className="text-center px-6">
+                  <p className="text-lg font-medium text-foreground/70">Usa el buscador o los filtros para explorar el catálogo</p>
+                  <p className="text-sm mt-1.5 max-w-sm">
+                    Los especímenes aparecerán en el mapa al ingresar un nombre científico,
+                    seleccionar una familia o aplicar un filtro avanzado.
+                  </p>
+                </div>
+              </div>
+            ) : mapLoading ? (
               <div className="h-[500px] bg-muted rounded-lg flex items-center justify-center">
                 <p className="text-lg text-muted-foreground">Cargando mapa...</p>
               </div>
             ) : mapPlants.length === 0 ? (
-              <div className="h-[500px] bg-muted rounded-lg flex flex-col items-center justify-center">
-                <p className="text-lg text-muted-foreground">No hay plantas con ubicación geográfica registrada.</p>
-                <Button variant="outline" className="mt-4" onClick={clearFilters}>
+              <div className="h-[500px] bg-muted rounded-lg flex flex-col items-center justify-center gap-2">
+                <p className="text-lg text-muted-foreground">No se encontraron especímenes con ubicación para este filtro.</p>
+                <Button variant="outline" className="mt-2" onClick={clearFilters}>
                   Limpiar filtros
                 </Button>
               </div>
@@ -469,7 +536,7 @@ export default function PlantasPage() {
           </div>
 
           {/* ── Sección estadísticas + tabla ─────────────────────────────── */}
-          {!mapLoading && mapPlants.length > 0 && (
+          {hasActiveFilters && !mapLoading && mapPlants.length > 0 && (
             <div className="mb-8">
               {/* Contador total */}
               <p className="text-sm text-muted-foreground mb-5">
@@ -557,7 +624,7 @@ export default function PlantasPage() {
                         <tbody className="divide-y divide-border">
                           {paginatedMapPlants.map((plant, idx) => (
                             <tr key={plant.id} className={idx % 2 === 0 ? 'bg-background' : 'bg-muted/20'}>
-                              <td className="px-3 py-2 text-muted-foreground">{plant.collector_number || '—'}</td>
+                              <td className="px-3 py-2 text-muted-foreground">{plant.record_number || '—'}</td>
                               <td className="px-3 py-2">{plant.recorded_by || '—'}</td>
                               <td className="px-3 py-2 text-center">
                                 {plant.image ? (
@@ -574,7 +641,7 @@ export default function PlantasPage() {
                               <td className="px-3 py-2">{plant.genus || '—'}</td>
                               <td className="px-3 py-2">
                                 <em>{plant.scientific_name}</em>
-                                {plant.author && <span className="text-muted-foreground ml-1 not-italic">{plant.author}</span>}
+                                {plant.scientific_name_authorship && <span className="text-muted-foreground ml-1 not-italic">{plant.scientific_name_authorship}</span>}
                               </td>
                               <td className="px-3 py-2 text-muted-foreground">{plant.catalog_number || '—'}</td>
                               <td className="px-3 py-2 text-center">
@@ -643,20 +710,25 @@ export default function PlantasPage() {
       {/* Resultados de la búsqueda (Vista Lista) */}
       {viewMode === 'list' && (
         <>
-          {loading ? (
+          {!hasActiveFilters ? (
+            /* Estado inicial — sin filtros activos */
+            <div className="flex flex-col items-center justify-center py-24 gap-4 text-muted-foreground">
+              <Search className="h-14 w-14 opacity-20" />
+              <div className="text-center">
+                <p className="text-lg font-medium text-foreground/70">Busca para explorar el catálogo</p>
+                <p className="text-sm mt-1.5 max-w-sm">
+                  Ingresa un nombre científico, selecciona una familia o usa los filtros avanzados para ver los especímenes.
+                </p>
+              </div>
+            </div>
+          ) : loading ? (
             <div className="text-center py-12">
               <p className="text-lg text-muted-foreground">Cargando plantas...</p>
             </div>
           ) : filteredPlantas.length === 0 ? (
             <div className="text-center py-12">
               <p className="text-lg text-muted-foreground">No se encontraron plantas con los criterios seleccionados.</p>
-              <Button
-                variant="outline"
-                className="mt-4"
-                onClick={() => {
-                  clearFilters()
-                }}
-              >
+              <Button variant="outline" className="mt-4" onClick={clearFilters}>
                 Limpiar filtros
               </Button>
             </div>

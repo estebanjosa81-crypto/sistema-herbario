@@ -2,6 +2,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { FileText, Calendar, MapPin, User } from "lucide-react"
 
+const fmtDate = (s: string) => {
+  if (!s || s === "N/A") return "—"
+  const d = new Date(s)
+  return isNaN(d.getTime()) ? s : d.toLocaleDateString("es-ES")
+}
+
 interface PlantDataSheetProps {
   planta: {
     numeroHerbario: string
@@ -80,7 +86,7 @@ export default function PlantDataSheet({ planta }: PlantDataSheetProps) {
                 <label className="text-sm font-medium text-muted-foreground">Fecha de determinación</label>
                 <p className="flex items-center gap-1">
                   <Calendar className="h-3 w-3" />
-                  {new Date(planta.fechaDeterminacion).toLocaleDateString("es-ES")}
+                  {fmtDate(planta.fechaDeterminacion)}
                 </p>
               </div>
               <div>
@@ -95,7 +101,7 @@ export default function PlantDataSheet({ planta }: PlantDataSheetProps) {
                 <label className="text-sm font-medium text-muted-foreground">Fecha de colección</label>
                 <p className="flex items-center gap-1">
                   <Calendar className="h-3 w-3" />
-                  {new Date(planta.fechaColeccion).toLocaleDateString("es-ES")}
+                  {fmtDate(planta.fechaColeccion)}
                 </p>
               </div>
             </div>

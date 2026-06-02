@@ -71,7 +71,7 @@ export default function PlantMap({
   const stats = useMemo(() => ({
     total:       plants.length,
     families:    new Set(plants.filter(p => p.family).map(p => p.family)).size,
-    departments: new Set(plants.filter(p => p.department).map(p => p.department)).size,
+    departments: new Set(plants.filter(p => p.state_province).map(p => p.state_province)).size,
   }), [plants])
 
   return (

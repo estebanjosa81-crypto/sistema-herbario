@@ -2,6 +2,7 @@
 const db = require('../../config/database');
 const logger = require('../../utils/logger');
 const { validationResult } = require('express-validator');
+const { exportData, getExportFormats } = require('./exportData');
 
 /**
  * Controlador de Plantas - Herbario Digital HEAA
@@ -899,33 +900,20 @@ const getFeaturedPlantsData = async (data, user) => {
 /**
  * Obtener opciones para filtros avanzados
  */
-const getFilterOptions = async (req, res) => {
-  try {
-    const [families] = await db.query('SELECT DISTINCT family FROM plants WHERE status = "published" AND family IS NOT NULL ORDER BY family');
-    const [genera] = await db.query('SELECT DISTINCT genus FROM plants WHERE status = "published" AND genus IS NOT NULL ORDER BY genus');
-    const [departments] = await db.query('SELECT DISTINCT state_province AS department FROM plants WHERE status = "published" AND state_province IS NOT NULL ORDER BY state_province');
-    const [municipalities] = await db.query('SELECT DISTINCT municipality FROM plants WHERE status = "published" AND municipality IS NOT NULL ORDER BY municipality');
-    const [collectors] = await db.query('SELECT DISTINCT recorded_by FROM plants WHERE status = "published" AND recorded_by IS NOT NULL ORDER BY recorded_by');
+const getFilterOptions = async (data, user) => {
+  const [families]      = await db.query('SELECT DISTINCT family FROM plants WHERE status = "published" AND family IS NOT NULL ORDER BY family');
+  const [genera]        = await db.query('SELECT DISTINCT genus FROM plants WHERE status = "published" AND genus IS NOT NULL ORDER BY genus');
+  const [departments]   = await db.query('SELECT DISTINCT state_province AS department FROM plants WHERE status = "published" AND state_province IS NOT NULL ORDER BY state_province');
+  const [municipalities]= await db.query('SELECT DISTINCT municipality FROM plants WHERE status = "published" AND municipality IS NOT NULL ORDER BY municipality');
+  const [collectors]    = await db.query('SELECT DISTINCT recorded_by FROM plants WHERE status = "published" AND recorded_by IS NOT NULL ORDER BY recorded_by');
 
-    res.json({
-      success: true,
-      data: {
-        families: families.map(f => ({ value: f.family.toLowerCase(), label: f.family })),
-        genera: genera.map(g => ({ value: g.genus.toLowerCase(), label: g.genus })),
-        departments: departments.map(d => ({ value: d.department.toLowerCase(), label: d.department })),
-        municipalities: municipalities.map(m => ({ value: m.municipality.toLowerCase(), label: m.municipality })),
-        collectors: collectors.map(c => ({ value: c.recorded_by.toLowerCase(), label: c.recorded_by }))
-      }
-    });
-
-  } catch (error) {
-    logger.error('Error en getFilterOptions:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Error al obtener opciones de filtros',
-      message: error.message
-    });
-  }
+  return {
+    families:      families.map(f => ({ value: f.family,        label: f.family })),
+    genera:        genera.map(g   => ({ value: g.genus,         label: g.genus })),
+    departments:   departments.map(d => ({ value: d.department, label: d.department })),
+    municipalities:municipalities.map(m => ({ value: m.municipality, label: m.municipality })),
+    collectors:    collectors.map(c => ({ value: c.recorded_by, label: c.recorded_by })),
+  };
 };
 
 /**
@@ -1175,8 +1163,8 @@ module.exports = {
   deleteImage: async () => ({ success: false, error: 'Usar servicio uploads.deleteFile' }),
   getImages: async () => ({ success: false, error: 'Incluido en getById' }),
   setMainImage: async () => ({ success: false, error: 'Usar servicio uploads.setMainImage' }),
-  exportData: async () => ({ success: false, error: 'Funcionalidad pendiente' }),
-  getExportFormats: async () => ({ success: false, error: 'Funcionalidad pendiente' }),
+  exportData,
+  getExportFormats,
   checkDuplicates: async () => ({ success: false, error: 'Funcionalidad pendiente' }),
   validatePlantData: async () => ({ success: false, error: 'Funcionalidad pendiente' }),
   getFieldValues: getFilterOptions
