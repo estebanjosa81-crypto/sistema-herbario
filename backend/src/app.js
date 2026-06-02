@@ -14,6 +14,10 @@ const healthCheck = require('./controllers/healthCheck');
 
 const app = express();
 
+// Traefik actúa como reverse proxy — necesario para que express-rate-limit
+// lea correctamente X-Forwarded-For y no bloquee IPs incorrectas
+app.set('trust proxy', 1);
+
 // CORS configurado para el frontend del herbario
 const corsOrigins = process.env.CORS_ORIGIN 
   ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim())
