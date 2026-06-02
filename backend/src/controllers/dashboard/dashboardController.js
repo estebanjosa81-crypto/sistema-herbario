@@ -448,7 +448,7 @@ const getPublicStats = async (req, res) => {
     const [totalPlants] = await db.query('SELECT COUNT(*) as total FROM plants WHERE status = "published"');
     const [totalFamilies] = await db.query('SELECT COUNT(DISTINCT family) as total FROM plants WHERE status = "published"');
     const [totalGenera] = await db.query('SELECT COUNT(DISTINCT genus) as total FROM plants WHERE status = "published"');
-    const [totalLocations] = await db.query('SELECT COUNT(DISTINCT CONCAT(department, "-", municipality)) as total FROM plants WHERE status = "published"');
+    const [totalLocations] = await db.query('SELECT COUNT(DISTINCT CONCAT(state_province, "-", municipality)) as total FROM plants WHERE status = "published"');
 
     res.json({
       success: true,
@@ -480,7 +480,7 @@ const getPublicStatsData = async (data, user) => {
     const [totalPlants] = await db.query('SELECT COUNT(*) as total FROM plants WHERE status = "published"');
     const [totalFamilies] = await db.query('SELECT COUNT(DISTINCT family) as total FROM plants WHERE status = "published"');
     const [totalGenera] = await db.query('SELECT COUNT(DISTINCT genus) as total FROM plants WHERE status = "published"');
-    const [totalLocations] = await db.query('SELECT COUNT(DISTINCT CONCAT(department, "-", municipality)) as total FROM plants WHERE status = "published"');
+    const [totalLocations] = await db.query('SELECT COUNT(DISTINCT CONCAT(state_province, "-", municipality)) as total FROM plants WHERE status = "published"');
 
     return {
       totalPlants: totalPlants[0].total,
