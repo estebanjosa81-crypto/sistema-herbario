@@ -4,8 +4,8 @@ const logger = require('../utils/logger');
 
 // Rate limiter general para el API
 const generalRateLimiter = rateLimit({
-  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000, // 15 minutos por defecto
-  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100, // 100 requests por ventana por defecto
+  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 5 * 60 * 1000, // 5 minutos por defecto
+  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 500, // 500 requests por ventana por defecto
   message: {
     success: false,
     error: 'Demasiadas peticiones',
