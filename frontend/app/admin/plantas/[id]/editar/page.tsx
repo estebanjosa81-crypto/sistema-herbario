@@ -826,8 +826,8 @@ export default function EditarPlantaPage() {
             </Card>
           </TabsContent>
 
-          {/* Sección: Colección */}
-          <TabsContent value="coleccion" className="space-y-6 mt-6">
+          {/* Sección: Ubicación */}
+          <TabsContent value="ubicacion" className="space-y-6 mt-6">
             <Card>
               <CardHeader>
                 <CardTitle>Información Geográfica</CardTitle>
