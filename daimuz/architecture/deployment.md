@@ -54,19 +54,26 @@ Redis (healthy) ─┘
 ## Variables de entorno requeridas en Dokploy
 
 ```
-APP_DOMAIN            → dominio del frontend (ej: herbario.itp.edu.co)
-API_DOMAIN            → dominio del backend  (ej: api.herbario.itp.edu.co)
-FRONTEND_URL          → URL completa del frontend (https://APP_DOMAIN)
-NEXT_PUBLIC_API_URL   → URL completa del backend  (https://API_DOMAIN)
-DB_ROOT_PASSWORD      → password root MySQL
-DB_NAME               → herbario_heaa (default)
-DB_USER               → herbario_user (default)
-DB_PASSWORD           → password del usuario MySQL
-JWT_SECRET            → secreto largo y aleatorio para JWT
-CLOUDINARY_CLOUD_NAME → nombre del cloud Cloudinary
-CLOUDINARY_API_KEY    → API key Cloudinary
-CLOUDINARY_API_SECRET → API secret Cloudinary
+APP_DOMAIN            → herbario.2.24.195.20.nip.io (staging) | dominio real en prod
+API_DOMAIN            → api.2.24.195.20.nip.io (staging)      | idem
+FRONTEND_URL          → https://APP_DOMAIN
+NEXT_PUBLIC_API_URL   → https://API_DOMAIN
+DB_ROOT_PASSWORD      → root123 (cambiar en prod)
+DB_NAME               → herbario_heaa
+DB_USER               → herbario_user
+DB_PASSWORD           → admin123 (cambiar en prod)
+JWT_SECRET            → secreto largo y aleatorio
+CLOUDINARY_CLOUD_NAME → djhhtzcwu
+CLOUDINARY_API_KEY    → (pendiente configurar)
+CLOUDINARY_API_SECRET → (pendiente configurar)
+CLOUDINARY_FOLDER     → herbario
+RATE_LIMIT_MAX_REQUESTS → 500
+RATE_LIMIT_WINDOW_MS    → 300000
+NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME → djhhtzcwu
 ```
+
+**Nota nip.io**: `*.2.24.195.20.nip.io` resuelve automáticamente a `2.24.195.20`.
+Funciona con Traefik + Let's Encrypt sin configurar DNS. Cambiar a dominio real cuando esté disponible.
 
 ## Inicialización de BD
 

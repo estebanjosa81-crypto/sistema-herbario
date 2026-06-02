@@ -4,6 +4,14 @@
 
 ---
 
+*Última validación: 2026-06-02 — probado en VPS 2.24.195.20*
+
+**Credenciales actuales de producción:**
+- Root password: `root123`
+- herbario_user password: `admin123`
+- Volumen MySQL: `heaa-herbario-yjg61n_mysql_data`
+- ⚠️ `herbario_user` solo acepta TCP — usar `-h 127.0.0.1` o conectar como root
+
 ## 1. Infraestructura actual
 
 ```
