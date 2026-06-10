@@ -78,16 +78,19 @@ const PAGINA_SETTINGS = [
   { key_name: 'featured_plants_count',  value: '6',                 type: 'number',  description: 'Número de plantas destacadas en la página principal' },
   // ── Acerca de — Encabezado
   { key_name: 'about_title',            value: 'Herbario HEAA',                type: 'string', description: 'Título principal de la página Acerca de' },
-  { key_name: 'about_subtitle',         value: 'Instituto Tecnológico del Putumayo (ITP) - Mocoa', type: 'string', description: 'Subtítulo de la página Acerca de' },
+  { key_name: 'about_subtitle',         value: 'Institución Universitaria del Putumayo (Uniputumayo) - Mocoa', type: 'string', description: 'Subtítulo de la página Acerca de' },
+  { key_name: 'about_header_logo',      value: '/images/logo-uniputumayo.svg', type: 'string', description: 'URL del logo del encabezado (Acerca de)' },
   // ── Acerca de — Historia
   { key_name: 'about_history_image',    value: '',                             type: 'string', description: 'URL imagen sección Historia (Acerca de)' },
   { key_name: 'about_history_title',    value: 'Nuestra Historia',             type: 'string', description: 'Título sección Historia' },
-  { key_name: 'about_history_p1',       value: 'El Herbario HEAA del Instituto Tecnológico del Putumayo fue fundado en 2005 con el objetivo de documentar, preservar y estudiar la rica diversidad florística de la región amazónica colombiana, con especial énfasis en el departamento del Putumayo.', type: 'string', description: 'Párrafo 1 de Historia' },
+  { key_name: 'about_history_p1',       value: 'El Herbario HEAA de la Institución Universitaria del Putumayo (Uniputumayo) fue fundado en 2005 con el objetivo de documentar, preservar y estudiar la rica diversidad florística de la región amazónica colombiana, con especial énfasis en el departamento del Putumayo.', type: 'string', description: 'Párrafo 1 de Historia' },
   { key_name: 'about_history_p2',       value: 'Nombrado en honor al botánico Hernando Ernesto Arias Arias, pionero en el estudio de la flora putumayense, nuestro herbario alberga una colección creciente de especímenes que representan la biodiversidad única de esta región biogeográfica.', type: 'string', description: 'Párrafo 2 de Historia' },
   { key_name: 'about_history_p3',       value: 'A lo largo de los años, el Herbario HEAA se ha consolidado como un centro de referencia para la investigación botánica en el sur de Colombia, contribuyendo significativamente al conocimiento científico y a la conservación de los ecosistemas amazónicos.', type: 'string', description: 'Párrafo 3 de Historia' },
   // ── Acerca de — Misión y Visión
   { key_name: 'about_mission_text',     value: 'Documentar, preservar y estudiar la diversidad florística del Putumayo y la región amazónica colombiana, contribuyendo al conocimiento científico, la educación ambiental y la conservación de los ecosistemas a través de la investigación botánica, la formación académica y la divulgación del patrimonio natural.', type: 'string', description: 'Texto de la Misión' },
   { key_name: 'about_vision_text',      value: 'Para 2030, el Herbario HEAA será reconocido como un centro de referencia nacional en la investigación botánica amazónica, con una colección representativa de la flora regional, infraestructura moderna, personal altamente calificado y una red de colaboración científica consolidada, contribuyendo activamente a la conservación de la biodiversidad y al desarrollo sostenible del territorio.', type: 'string', description: 'Texto de la Visión' },
+  { key_name: 'about_mission_title',    value: 'Misión',                       type: 'string', description: 'Título de la tarjeta Misión' },
+  { key_name: 'about_vision_title',     value: 'Visión',                       type: 'string', description: 'Título de la tarjeta Visión' },
   // ── Acerca de — Estadísticas
   { key_name: 'about_stats_title',      value: 'Nuestra Colección',            type: 'string', description: 'Título sección Estadísticas (Acerca de)' },
   { key_name: 'about_stat1_value',      value: '5.200+',                       type: 'string', description: 'Valor estadística 1' },
@@ -98,6 +101,13 @@ const PAGINA_SETTINGS = [
   { key_name: 'about_stat3_label',      value: 'Géneros representados',        type: 'string', description: 'Etiqueta estadística 3' },
   { key_name: 'about_stat4_value',      value: '1.800+',                       type: 'string', description: 'Valor estadística 4' },
   { key_name: 'about_stat4_label',      value: 'Especies documentadas',        type: 'string', description: 'Etiqueta estadística 4' },
+  // ── Acerca de — Pestañas (etiquetas y títulos)
+  { key_name: 'about_tab1_label',       value: 'Colecciones',                  type: 'string', description: 'Etiqueta de la pestaña 1' },
+  { key_name: 'about_tab2_label',       value: 'Investigación',                type: 'string', description: 'Etiqueta de la pestaña 2' },
+  { key_name: 'about_tab3_label',       value: 'Equipo',                       type: 'string', description: 'Etiqueta de la pestaña 3' },
+  { key_name: 'about_col_tab_title',    value: 'Nuestras Colecciones',         type: 'string', description: 'Título interno de la pestaña Colecciones' },
+  { key_name: 'about_res_tab_title',    value: 'Líneas de Investigación',      type: 'string', description: 'Título interno de la pestaña Investigación' },
+  { key_name: 'about_team_tab_title',   value: 'Nuestro Equipo',               type: 'string', description: 'Título interno de la pestaña Equipo' },
   // ── Acerca de — Tab Colecciones
   { key_name: 'about_col1_title',       value: 'Colección General',            type: 'string', description: 'Título colección 1' },
   { key_name: 'about_col1_text',        value: 'Nuestra colección principal contiene especímenes representativos de la flora del Putumayo y la Amazonía colombiana, organizados según el sistema de clasificación APG IV. Incluye ejemplares de bosques de niebla, bosques andino-amazónicos y ecosistemas de piedemonte.', type: 'string', description: 'Texto colección 1' },
@@ -129,16 +139,45 @@ const PAGINA_SETTINGS = [
   { key_name: 'about_member3_name',     value: 'MSc. Carlos Gómez',           type: 'string', description: 'Nombre miembro 3' },
   { key_name: 'about_member3_role',     value: 'Investigador Asociado',        type: 'string', description: 'Cargo miembro 3' },
   { key_name: 'about_member3_bio',      value: 'Etnobotánico especializado en conocimientos tradicionales de comunidades indígenas del Putumayo. Lidera proyectos de investigación participativa.', type: 'string', description: 'Bio miembro 3' },
+  // ── Acerca de — Líder del proyecto
+  { key_name: 'about_leader_enabled',   value: 'true',                         type: 'boolean', description: 'Mostrar tarjeta del líder del proyecto (Acerca de)' },
+  { key_name: 'about_leader_label',     value: 'Líder del proyecto',           type: 'string', description: 'Etiqueta superior de la tarjeta del líder' },
+  { key_name: 'about_leader_image',     value: '',                             type: 'string', description: 'URL foto del líder del proyecto' },
+  { key_name: 'about_leader_name',      value: 'MSc. Jhon Henry Cuellar Portilla', type: 'string', description: 'Nombre del líder del proyecto' },
+  { key_name: 'about_leader_role',      value: 'Director de Programa Ingeniería de Sistemas', type: 'string', description: 'Cargo del líder del proyecto' },
+  { key_name: 'about_leader_email',     value: 'jcuellar@itp.edu.co',          type: 'string', description: 'Correo del líder del proyecto' },
+  { key_name: 'about_leader_phone',     value: '+57 314 335 1747',             type: 'string', description: 'Teléfono del líder del proyecto' },
+  // ── Acerca de — Créditos de desarrollo
+  { key_name: 'about_credits_enabled',  value: 'true',                         type: 'boolean', description: 'Mostrar sección de créditos de desarrollo (Acerca de)' },
+  { key_name: 'about_credits_title',    value: 'Créditos de desarrollo',       type: 'string', description: 'Título de la sección de créditos' },
+  { key_name: 'about_credits_text',     value: 'Aplicativo web desarrollado como producto de pasantía investigativa del programa de Ingeniería de Sistemas de la Institución Universitaria del Putumayo.', type: 'string', description: 'Texto introductorio de los créditos' },
+  { key_name: 'about_credits_support_text', value: '¿Necesitas soporte técnico del aplicativo? Contacta a los desarrolladores por correo o GitHub.', type: 'string', description: 'Texto de soporte bajo las tarjetas de créditos' },
+  { key_name: 'about_dev1_image',       value: 'https://avatars.githubusercontent.com/u/115267707?v=4', type: 'string', description: 'URL foto desarrollador 1' },
+  { key_name: 'about_dev1_badge',       value: 'Desarrollador Full Stack',     type: 'string', description: 'Etiqueta superior desarrollador 1' },
+  { key_name: 'about_dev1_name',        value: 'Jhon Esteban Josa Quinchoa',   type: 'string', description: 'Nombre desarrollador 1' },
+  { key_name: 'about_dev1_role',        value: 'Estudiante de Ingeniería de Sistemas — Uniputumayo', type: 'string', description: 'Rol desarrollador 1' },
+  { key_name: 'about_dev1_bio',         value: 'Backend y frontend con Node.js, Express, Next.js, React, MySQL y Docker.', type: 'string', description: 'Bio breve desarrollador 1' },
+  { key_name: 'about_dev1_email',       value: 'jhonjosa2021@itp.edu.co',      type: 'string', description: 'Correo desarrollador 1' },
+  { key_name: 'about_dev1_github',      value: 'https://github.com/esteban2oo1', type: 'string', description: 'Perfil de GitHub desarrollador 1' },
+  { key_name: 'about_dev2_image',       value: 'https://avatars.githubusercontent.com/u/134365120?v=4', type: 'string', description: 'URL foto desarrollador 2' },
+  { key_name: 'about_dev2_badge',       value: 'Desarrollador Full Stack',     type: 'string', description: 'Etiqueta superior desarrollador 2' },
+  { key_name: 'about_dev2_name',        value: 'Maycol Sebastián Francisco Guerrero López', type: 'string', description: 'Nombre desarrollador 2' },
+  { key_name: 'about_dev2_role',        value: 'Estudiante de Ingeniería de Sistemas — Uniputumayo', type: 'string', description: 'Rol desarrollador 2' },
+  { key_name: 'about_dev2_bio',         value: 'Desarrollo web y móvil con Python, JavaScript, Laravel, Flutter, MySQL y Firebase.', type: 'string', description: 'Bio breve desarrollador 2' },
+  { key_name: 'about_dev2_email',       value: 'maycolguerrero2021@itp.edu.co', type: 'string', description: 'Correo desarrollador 2' },
+  { key_name: 'about_dev2_github',      value: 'https://github.com/mclguerrero', type: 'string', description: 'Perfil de GitHub desarrollador 2' },
   // ── Acerca de — Ubicación
   { key_name: 'about_location_title',    value: 'Visítanos',                   type: 'string', description: 'Título sección Ubicación (Acerca de)' },
-  { key_name: 'about_location_address',  value: 'Instituto Tecnológico del Putumayo\nSede Mocoa - Barrio Luis Carlos Galán\nMocoa, Putumayo, Colombia', type: 'string', description: 'Dirección física (Acerca de)' },
+  { key_name: 'about_location_address',  value: 'Institución Universitaria del Putumayo\nSede Mocoa - Barrio Luis Carlos Galán\nMocoa, Putumayo, Colombia', type: 'string', description: 'Dirección física (Acerca de)' },
   { key_name: 'about_location_schedule', value: 'El Herbario HEAA está abierto para visitas académicas y de investigación de lunes a viernes, de 8:00 am a 12:00 m y de 2:00 pm a 6:00 pm. Para grupos grandes o visitas especializadas, recomendamos agendar con anticipación.', type: 'string', description: 'Horario de atención (Acerca de)' },
   { key_name: 'about_location_image',    value: '',                            type: 'string', description: 'URL imagen/mapa sección Ubicación (Acerca de)' },
+  { key_name: 'about_contact_button_text', value: 'Contactar al Herbario',     type: 'string', description: 'Texto del botón de contacto en Ubicación' },
+  { key_name: 'about_contact_button_url',  value: '/contacto',                 type: 'string', description: 'URL del botón de contacto en Ubicación' },
   // ── Acerca de — Colaboraciones (4 instituciones)
   { key_name: 'about_partners_title',   value: 'Colaboraciones y Alianzas',    type: 'string', description: 'Título sección Colaboraciones (Acerca de)' },
-  { key_name: 'about_partner1_name',    value: 'Institución 1',                type: 'string', description: 'Nombre institución colaboradora 1' },
-  { key_name: 'about_partner1_image',   value: '',                             type: 'string', description: 'URL logo institución colaboradora 1' },
-  { key_name: 'about_partner1_url',     value: '',                             type: 'string', description: 'URL enlace institución colaboradora 1' },
+  { key_name: 'about_partner1_name',    value: 'Uniputumayo',                  type: 'string', description: 'Nombre institución colaboradora 1' },
+  { key_name: 'about_partner1_image',   value: '/images/logo-uniputumayo.svg', type: 'string', description: 'URL logo institución colaboradora 1' },
+  { key_name: 'about_partner1_url',     value: 'https://itp.edu.co',           type: 'string', description: 'URL enlace institución colaboradora 1' },
   { key_name: 'about_partner2_name',    value: 'Institución 2',                type: 'string', description: 'Nombre institución colaboradora 2' },
   { key_name: 'about_partner2_image',   value: '',                             type: 'string', description: 'URL logo institución colaboradora 2' },
   { key_name: 'about_partner2_url',     value: '',                             type: 'string', description: 'URL enlace institución colaboradora 2' },
@@ -158,11 +197,11 @@ const PAGINA_SETTINGS = [
   { key_name: 'login_bg_attribution', value: 'IERNA SINCHI',       type: 'string',  description: 'Atribución de la imagen de fondo del login' },
   { key_name: 'login_tagline',        value: 'Descubre la flora de la Amazonia', type: 'string', description: 'Tagline que aparece en el panel izquierdo del login' },
   // Logo
-  { key_name: 'logo_text',              value: 'Herbario Digital',  type: 'string',  description: 'Nombre o texto del logo del sitio' },
-  { key_name: 'logo_image_url',         value: '',                  type: 'string',  description: 'URL de imagen de logo (opcional, vacío usa icono)' },
+  { key_name: 'logo_text',              value: 'Herbario HEAA',     type: 'string',  description: 'Nombre o texto del logo del sitio' },
+  { key_name: 'logo_image_url',         value: '/images/logo-uniputumayo-icono.svg', type: 'string',  description: 'URL de imagen de logo (opcional, vacío usa icono)' },
   // Footer — texto general
   { key_name: 'footer_description',     value: 'Explorando y preservando la diversidad botánica para las generaciones futuras.', type: 'string', description: 'Descripción breve en el footer' },
-  { key_name: 'footer_copyright',       value: 'Herbario Digital. Todos los derechos reservados.', type: 'string', description: 'Texto de copyright del footer' },
+  { key_name: 'footer_copyright',       value: 'Herbario HEAA — Institución Universitaria del Putumayo. Todos los derechos reservados.', type: 'string', description: 'Texto de copyright del footer' },
   // Footer — columna 1
   { key_name: 'footer_col1_title',      value: 'Explorar',               type: 'string', description: 'Título de la columna 1 del footer' },
   { key_name: 'footer_col1_link1_text', value: 'Catálogo de Plantas',    type: 'string', description: 'Texto enlace 1, columna 1 del footer' },
@@ -205,6 +244,54 @@ const PAGINA_SETTINGS = [
     logger.info(`✅ Settings cargadas (${PAGINA_SETTINGS.length})`);
   } catch (err) {
     logger.warn('No se pudieron migrar settings de página:', err.message);
+  }
+})();
+
+// ── Migración de marca: ITP → Uniputumayo ───────────────────────────────────
+// Solo actualiza valores que aún conservan el default anterior (no pisa
+// personalizaciones hechas desde el panel de administración).
+const REBRAND_UPDATES = [
+  { key: 'about_subtitle',
+    from: 'Instituto Tecnológico del Putumayo (ITP) - Mocoa',
+    to:   'Institución Universitaria del Putumayo (Uniputumayo) - Mocoa' },
+  { key: 'about_history_p1',
+    from: 'El Herbario HEAA del Instituto Tecnológico del Putumayo fue fundado en 2005 con el objetivo de documentar, preservar y estudiar la rica diversidad florística de la región amazónica colombiana, con especial énfasis en el departamento del Putumayo.',
+    to:   'El Herbario HEAA de la Institución Universitaria del Putumayo (Uniputumayo) fue fundado en 2005 con el objetivo de documentar, preservar y estudiar la rica diversidad florística de la región amazónica colombiana, con especial énfasis en el departamento del Putumayo.' },
+  { key: 'about_location_address',
+    from: 'Instituto Tecnológico del Putumayo\nSede Mocoa - Barrio Luis Carlos Galán\nMocoa, Putumayo, Colombia',
+    to:   'Institución Universitaria del Putumayo\nSede Mocoa - Barrio Luis Carlos Galán\nMocoa, Putumayo, Colombia' },
+  { key: 'about_partner1_name',  from: 'Institución 1', to: 'Uniputumayo' },
+  { key: 'about_partner1_image', from: '',              to: '/images/logo-uniputumayo.svg' },
+  { key: 'about_partner1_url',   from: '',              to: 'https://itp.edu.co' },
+  { key: 'logo_text',            from: 'Herbario Digital', to: 'Herbario HEAA' },
+  { key: 'logo_image_url',       from: '',              to: '/images/logo-uniputumayo-icono.svg' },
+  { key: 'footer_copyright',
+    from: 'Herbario Digital. Todos los derechos reservados.',
+    to:   'Herbario HEAA — Institución Universitaria del Putumayo. Todos los derechos reservados.' },
+  // Tarjetas profesionales de desarrolladores (avatares de GitHub y roles)
+  { key: 'about_dev1_image', from: '', to: 'https://avatars.githubusercontent.com/u/115267707?v=4' },
+  { key: 'about_dev2_image', from: '', to: 'https://avatars.githubusercontent.com/u/134365120?v=4' },
+  { key: 'about_dev1_role',
+    from: 'Desarrollador — Estudiante de Ingeniería de Sistemas',
+    to:   'Estudiante de Ingeniería de Sistemas — Uniputumayo' },
+  { key: 'about_dev2_role',
+    from: 'Desarrollador — Estudiante de Ingeniería de Sistemas',
+    to:   'Estudiante de Ingeniería de Sistemas — Uniputumayo' },
+];
+
+(async () => {
+  try {
+    let changed = 0;
+    for (const u of REBRAND_UPDATES) {
+      const [result] = await db.query(
+        'UPDATE settings SET value = ?, updated_at = NOW() WHERE key_name = ? AND value = ?',
+        [u.to, u.key, u.from]
+      );
+      if (result.affectedRows > 0) changed += result.affectedRows;
+    }
+    if (changed > 0) logger.info(`✅ Migración de marca Uniputumayo aplicada (${changed} settings)`);
+  } catch (err) {
+    logger.warn('No se pudo aplicar la migración de marca:', err.message);
   }
 })();
 

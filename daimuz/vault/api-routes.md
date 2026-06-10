@@ -1,5 +1,7 @@
 # Rutas API — Referencia Completa
 
+> ⚠️ **Fuente técnica de verdad (2026-06-04):** `backend/docs/api-spec.yaml` (OpenAPI 3.1, con `x-service-status` por servicio) y `backend/docs/GUIA-DESARROLLADORES.md`. Esta referencia lista servicios registrados, no su estado real (rotos/stub/always403/404) — ver `memory/bugs-history.md` (2026-06-04) e `indexes/endpoints-index.md`.
+
 ## Patrón único
 
 ```

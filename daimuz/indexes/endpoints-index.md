@@ -1,5 +1,14 @@
 # Índice de Endpoints
 
+> ⚠️ **Estado real (auditoría 2026-06-04):** este índice lista los servicios *registrados*, pero no todos funcionan. La **fuente técnica de verdad** es `backend/docs/api-spec.yaml` (OpenAPI 3.1, campo `x-service-status` por servicio) y `backend/docs/GUIA-DESARROLLADORES.md`.
+>
+> Leyenda de estado (detalle en `memory/bugs-history.md` 2026-06-04):
+> - **ok** — funcional (~97 servicios).
+> - **broken** — handler estilo Express, falla vía gateway: `auth.refresh/changePassword/verifyEmail`, `users.changeRole/getProfile/getActivity`.
+> - **stub** — devuelve "Funcionalidad pendiente": escrituras de `taxonomy.*`/`locations.*`, `plants.uploadImage/deleteImage/getImages/setMainImage`, `uploads.resizeImage`, `validation.checkDuplicates/validatePlantData`.
+> - **always403** — exige admin pero no recibe el usuario: `suggestions.update/updateStatus/getStats` (y `users.toggleStatus`, que además es 404).
+> - **404** — registrado pero `undefined`: `users.uploadAvatar/getStats/deactivate/activate`, `autocomplete.collectors`.
+
 ## Endpoint único (API Gateway)
 
 ```

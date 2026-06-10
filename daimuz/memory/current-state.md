@@ -1,6 +1,25 @@
 # Estado Actual del Sistema
 
-*Última actualización: 2026-06-02 (sesión de despliegue y debugging Dokploy)*
+*Última actualización: 2026-06-04 (auditoría de servicios + documentación OpenAPI 3.1)*
+
+---
+
+## 🛠️ Cambios sesión 2026-06-04
+
+### Documentación de la API regenerada fiel al código
+- **`backend/docs/api-spec.yaml`** — regenerado en **OpenAPI 3.1** (v2.0.0) a partir de una auditoría completa del registro `services/index.js`, el despachador y los controladores. 125 operaciones (121 servicios reales + 4 rutas HTTP reales), cada una con su ruta/método HTTP real, payload, validaciones, respuestas, auth, rol y un campo `x-service-status` (ok/stub/broken/always403). Se sirve en `/api-docs`.
+- **`backend/docs/GUIA-DESARROLLADORES.md`** — nueva guía: patrón Monolito Modular + Service Gateway (RPC), flujo de auth, estructura de módulos, hallazgos de seguridad y ejemplos de consumo (JS, React, React Native, Flutter).
+
+### Auditoría de servicios — estado real (ver `bugs-history.md` 2026-06-04)
+- De 126 servicios registrados, ~97 funcionales; el resto rotos/stub/mal cableados.
+- 6 servicios rotos vía gateway (handlers estilo Express): `auth.refresh/changePassword/verifyEmail`, `users.changeRole/getProfile/getActivity`.
+- 3 bugs "siempre 403" (`suggestions.update/updateStatus/getStats`) + `users.toggleStatus` (404, no registrado).
+- 5 servicios registrados pero `undefined` → 404 (`users.uploadAvatar/getStats/deactivate/activate`, `autocomplete.collectors`).
+- Brechas de auth: `plants.purgeDeleted`, `uploads.deleteFile`, métricas del dashboard y `settings.get` accesibles sin protección.
+- Rate limiter estricto de login definido pero NO conectado (sólo aplica el general 500/5min).
+- `auth.resetPassword` simulado; `auth.register` fuerza rol `user`.
+
+> Nota: el índice `indexes/endpoints-index.md` y `vault/api-routes.md` listaban estos servicios como funcionales. La fuente técnica de verdad pasa a ser `backend/docs/api-spec.yaml`.
 
 ---
 

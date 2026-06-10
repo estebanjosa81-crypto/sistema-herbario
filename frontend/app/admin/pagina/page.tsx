@@ -133,6 +133,8 @@ export default function PaginaAdminPage() {
     about_stats: 'Acerca — Colección',
     about_collections: 'Acerca — Pestaña Colecciones',
     about_research: 'Acerca — Pestaña Investigación',
+    about_leader: 'Acerca — Líder del proyecto',
+    about_credits: 'Acerca — Créditos de desarrollo',
     about_team: 'Acerca — Equipo',
     about_location: 'Acerca — Ubicación',
     about_partners: 'Acerca — Colaboraciones',
@@ -1330,6 +1332,9 @@ export default function PaginaAdminPage() {
                     <Input id="about_subtitle" value={str(settings.about_subtitle)} onChange={e => set("about_subtitle", e.target.value)} />
                   </Field>
                 </div>
+                <Field label="URL del logo del encabezado" id="about_header_logo" hint="Logo que aparece arriba del título (por defecto, el logo oficial de Uniputumayo)">
+                  <Input id="about_header_logo" placeholder="/images/logo-uniputumayo.svg" value={str(settings.about_header_logo)} onChange={e => set("about_header_logo", e.target.value)} />
+                </Field>
                 <Field label="URL imagen sección Historia" id="about_history_image" hint="Imagen que aparece al lado del texto de historia">
                   <Input id="about_history_image" placeholder="https://..." value={str(settings.about_history_image)} onChange={e => set("about_history_image", e.target.value)} />
                 </Field>
@@ -1346,7 +1351,7 @@ export default function PaginaAdminPage() {
                   <Textarea id="about_history_p3" rows={3} value={str(settings.about_history_p3)} onChange={e => set("about_history_p3", e.target.value)} />
                 </Field>
                 <div className="pt-2">
-                  <SaveBtn sectionId="about_header" keys={["about_title","about_subtitle","about_history_image","about_history_title","about_history_p1","about_history_p2","about_history_p3"]} />
+                  <SaveBtn sectionId="about_header" keys={["about_title","about_subtitle","about_header_logo","about_history_image","about_history_title","about_history_p1","about_history_p2","about_history_p3"]} />
                 </div>
               </CardContent>
             </Card>
@@ -1358,6 +1363,14 @@ export default function PaginaAdminPage() {
                 <CardDescription>Textos de la misión y visión institucional</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <Field label="Título tarjeta Misión" id="about_mission_title">
+                    <Input id="about_mission_title" placeholder="Misión" value={str(settings.about_mission_title)} onChange={e => set("about_mission_title", e.target.value)} />
+                  </Field>
+                  <Field label="Título tarjeta Visión" id="about_vision_title">
+                    <Input id="about_vision_title" placeholder="Visión" value={str(settings.about_vision_title)} onChange={e => set("about_vision_title", e.target.value)} />
+                  </Field>
+                </div>
                 <Field label="Misión" id="about_mission_text">
                   <Textarea id="about_mission_text" rows={4} value={str(settings.about_mission_text)} onChange={e => set("about_mission_text", e.target.value)} />
                 </Field>
@@ -1365,7 +1378,51 @@ export default function PaginaAdminPage() {
                   <Textarea id="about_vision_text" rows={4} value={str(settings.about_vision_text)} onChange={e => set("about_vision_text", e.target.value)} />
                 </Field>
                 <div className="pt-2">
-                  <SaveBtn sectionId="about_mission" keys={["about_mission_text","about_vision_text"]} />
+                  <SaveBtn sectionId="about_mission" keys={["about_mission_title","about_vision_title","about_mission_text","about_vision_text"]} />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Líder del proyecto */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Líder del proyecto</CardTitle>
+                <CardDescription>Tarjeta destacada con foto y datos de contacto del líder del proyecto</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <Switch
+                    id="about_leader_enabled"
+                    checked={settings.about_leader_enabled === "true"}
+                    onCheckedChange={(v) => set("about_leader_enabled", String(v))}
+                  />
+                  <Label htmlFor="about_leader_enabled">Mostrar tarjeta del líder</Label>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <Field label="Etiqueta superior" id="about_leader_label" hint='Ej: "Líder del proyecto"'>
+                    <Input id="about_leader_label" value={str(settings.about_leader_label)} onChange={e => set("about_leader_label", e.target.value)} />
+                  </Field>
+                  <Field label="Nombre" id="about_leader_name">
+                    <Input id="about_leader_name" value={str(settings.about_leader_name)} onChange={e => set("about_leader_name", e.target.value)} />
+                  </Field>
+                  <Field label="Cargo" id="about_leader_role">
+                    <Input id="about_leader_role" value={str(settings.about_leader_role)} onChange={e => set("about_leader_role", e.target.value)} />
+                  </Field>
+                  <Field label="Correo electrónico" id="about_leader_email">
+                    <Input id="about_leader_email" type="email" value={str(settings.about_leader_email)} onChange={e => set("about_leader_email", e.target.value)} />
+                  </Field>
+                  <Field label="Teléfono" id="about_leader_phone">
+                    <Input id="about_leader_phone" value={str(settings.about_leader_phone)} onChange={e => set("about_leader_phone", e.target.value)} />
+                  </Field>
+                  <Field label="URL foto" id="about_leader_image" hint="Vacío = imagen de marcador de posición">
+                    <Input id="about_leader_image" placeholder="https://..." value={str(settings.about_leader_image)} onChange={e => set("about_leader_image", e.target.value)} />
+                  </Field>
+                </div>
+                <div className="pt-2">
+                  <SaveBtn sectionId="about_leader" keys={[
+                    "about_leader_enabled","about_leader_label","about_leader_image",
+                    "about_leader_name","about_leader_role","about_leader_email","about_leader_phone",
+                  ]} />
                 </div>
               </CardContent>
             </Card>
@@ -1410,6 +1467,14 @@ export default function PaginaAdminPage() {
                 <CardDescription>Cuatro sub-secciones de la pestaña Colecciones en la página Acerca de</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <Field label="Etiqueta de la pestaña" id="about_tab1_label">
+                    <Input id="about_tab1_label" placeholder="Colecciones" value={str(settings.about_tab1_label)} onChange={e => set("about_tab1_label", e.target.value)} />
+                  </Field>
+                  <Field label="Título interno" id="about_col_tab_title">
+                    <Input id="about_col_tab_title" placeholder="Nuestras Colecciones" value={str(settings.about_col_tab_title)} onChange={e => set("about_col_tab_title", e.target.value)} />
+                  </Field>
+                </div>
                 {([1,2,3,4] as const).map(n => (
                   <div key={n} className="border rounded-lg p-4 space-y-3 bg-muted/30">
                     <p className="text-sm font-semibold">Colección {n}</p>
@@ -1423,6 +1488,7 @@ export default function PaginaAdminPage() {
                 ))}
                 <div className="pt-2">
                   <SaveBtn sectionId="about_collections" keys={[
+                    "about_tab1_label","about_col_tab_title",
                     "about_col1_title","about_col1_text","about_col2_title","about_col2_text",
                     "about_col3_title","about_col3_text","about_col4_title","about_col4_text",
                   ]} />
@@ -1437,6 +1503,14 @@ export default function PaginaAdminPage() {
                 <CardDescription>Cuatro líneas de investigación en la pestaña Investigación</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <Field label="Etiqueta de la pestaña" id="about_tab2_label">
+                    <Input id="about_tab2_label" placeholder="Investigación" value={str(settings.about_tab2_label)} onChange={e => set("about_tab2_label", e.target.value)} />
+                  </Field>
+                  <Field label="Título interno" id="about_res_tab_title">
+                    <Input id="about_res_tab_title" placeholder="Líneas de Investigación" value={str(settings.about_res_tab_title)} onChange={e => set("about_res_tab_title", e.target.value)} />
+                  </Field>
+                </div>
                 {([1,2,3,4] as const).map(n => (
                   <div key={n} className="border rounded-lg p-4 space-y-3 bg-muted/30">
                     <p className="text-sm font-semibold">Línea {n}</p>
@@ -1450,6 +1524,7 @@ export default function PaginaAdminPage() {
                 ))}
                 <div className="pt-2">
                   <SaveBtn sectionId="about_research" keys={[
+                    "about_tab2_label","about_res_tab_title",
                     "about_res1_title","about_res1_text","about_res2_title","about_res2_text",
                     "about_res3_title","about_res3_text","about_res4_title","about_res4_text",
                   ]} />
@@ -1464,6 +1539,14 @@ export default function PaginaAdminPage() {
                 <CardDescription>Los tres miembros del equipo que se muestran en la pestaña Equipo</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <Field label="Etiqueta de la pestaña" id="about_tab3_label">
+                    <Input id="about_tab3_label" placeholder="Equipo" value={str(settings.about_tab3_label)} onChange={e => set("about_tab3_label", e.target.value)} />
+                  </Field>
+                  <Field label="Título interno" id="about_team_tab_title">
+                    <Input id="about_team_tab_title" placeholder="Nuestro Equipo" value={str(settings.about_team_tab_title)} onChange={e => set("about_team_tab_title", e.target.value)} />
+                  </Field>
+                </div>
                 {([1,2,3] as const).map(n => (
                   <div key={n} className="border rounded-lg p-4 space-y-3 bg-muted/30">
                     <p className="text-sm font-semibold">Miembro {n}</p>
@@ -1483,9 +1566,74 @@ export default function PaginaAdminPage() {
                 ))}
                 <div className="pt-2">
                   <SaveBtn sectionId="about_team" keys={[
+                    "about_tab3_label","about_team_tab_title",
                     "about_member1_image","about_member1_name","about_member1_role","about_member1_bio",
                     "about_member2_image","about_member2_name","about_member2_role","about_member2_bio",
                     "about_member3_image","about_member3_name","about_member3_role","about_member3_bio",
+                  ]} />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Créditos de desarrollo — responsables del aplicativo */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Créditos de desarrollo</CardTitle>
+                <CardDescription>Responsables del desarrollo del aplicativo que se muestran al final de la página Acerca de</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <Switch
+                    id="about_credits_enabled"
+                    checked={settings.about_credits_enabled === "true"}
+                    onCheckedChange={(v) => set("about_credits_enabled", String(v))}
+                  />
+                  <Label htmlFor="about_credits_enabled">Mostrar créditos de desarrollo</Label>
+                </div>
+                <Field label="Título de la sección" id="about_credits_title">
+                  <Input id="about_credits_title" value={str(settings.about_credits_title)} onChange={e => set("about_credits_title", e.target.value)} />
+                </Field>
+                <Field label="Texto introductorio" id="about_credits_text">
+                  <Textarea id="about_credits_text" rows={2} value={str(settings.about_credits_text)} onChange={e => set("about_credits_text", e.target.value)} />
+                </Field>
+                <Field label="Texto de soporte" id="about_credits_support_text" hint="Mensaje que aparece bajo las tarjetas (contacto de soporte)">
+                  <Textarea id="about_credits_support_text" rows={2} value={str(settings.about_credits_support_text)} onChange={e => set("about_credits_support_text", e.target.value)} />
+                </Field>
+                {([1,2] as const).map(n => (
+                  <div key={n} className="border rounded-lg p-4 space-y-3 bg-muted/30">
+                    <p className="text-sm font-semibold">Desarrollador {n}</p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <Field label="Etiqueta superior" id={`about_dev${n}_badge`} hint='Ej: "Desarrollador Full Stack"'>
+                        <Input id={`about_dev${n}_badge`} value={str(settings[`about_dev${n}_badge`])} onChange={e => set(`about_dev${n}_badge`, e.target.value)} />
+                      </Field>
+                      <Field label="Nombre" id={`about_dev${n}_name`}>
+                        <Input id={`about_dev${n}_name`} value={str(settings[`about_dev${n}_name`])} onChange={e => set(`about_dev${n}_name`, e.target.value)} />
+                      </Field>
+                    </div>
+                    <Field label="Rol / Formación" id={`about_dev${n}_role`}>
+                      <Input id={`about_dev${n}_role`} value={str(settings[`about_dev${n}_role`])} onChange={e => set(`about_dev${n}_role`, e.target.value)} />
+                    </Field>
+                    <Field label="Bio / Tecnologías" id={`about_dev${n}_bio`} hint="Resumen profesional breve">
+                      <Textarea id={`about_dev${n}_bio`} rows={2} value={str(settings[`about_dev${n}_bio`])} onChange={e => set(`about_dev${n}_bio`, e.target.value)} />
+                    </Field>
+                    <div className="grid grid-cols-2 gap-3">
+                      <Field label="Correo electrónico" id={`about_dev${n}_email`}>
+                        <Input id={`about_dev${n}_email`} type="email" value={str(settings[`about_dev${n}_email`])} onChange={e => set(`about_dev${n}_email`, e.target.value)} />
+                      </Field>
+                      <Field label="Perfil de GitHub" id={`about_dev${n}_github`}>
+                        <Input id={`about_dev${n}_github`} placeholder="https://github.com/usuario" value={str(settings[`about_dev${n}_github`])} onChange={e => set(`about_dev${n}_github`, e.target.value)} />
+                      </Field>
+                    </div>
+                    <Field label="URL foto" id={`about_dev${n}_image`} hint="Por defecto se usa el avatar de GitHub">
+                      <Input id={`about_dev${n}_image`} placeholder="https://..." value={str(settings[`about_dev${n}_image`])} onChange={e => set(`about_dev${n}_image`, e.target.value)} />
+                    </Field>
+                  </div>
+                ))}
+                <div className="pt-2">
+                  <SaveBtn sectionId="about_credits" keys={[
+                    "about_credits_enabled","about_credits_title","about_credits_text","about_credits_support_text",
+                    "about_dev1_image","about_dev1_badge","about_dev1_name","about_dev1_role","about_dev1_bio","about_dev1_email","about_dev1_github",
+                    "about_dev2_image","about_dev2_badge","about_dev2_name","about_dev2_role","about_dev2_bio","about_dev2_email","about_dev2_github",
                   ]} />
                 </div>
               </CardContent>
@@ -1510,8 +1658,16 @@ export default function PaginaAdminPage() {
                 <Field label="URL imagen/mapa" id="about_location_image" hint="Imagen que aparece al lado del texto de ubicación">
                   <Input id="about_location_image" placeholder="https://..." value={str(settings.about_location_image)} onChange={e => set("about_location_image", e.target.value)} />
                 </Field>
+                <div className="grid grid-cols-2 gap-3">
+                  <Field label="Texto del botón de contacto" id="about_contact_button_text">
+                    <Input id="about_contact_button_text" placeholder="Contactar al Herbario" value={str(settings.about_contact_button_text)} onChange={e => set("about_contact_button_text", e.target.value)} />
+                  </Field>
+                  <Field label="URL del botón de contacto" id="about_contact_button_url">
+                    <Input id="about_contact_button_url" placeholder="/contacto" value={str(settings.about_contact_button_url)} onChange={e => set("about_contact_button_url", e.target.value)} />
+                  </Field>
+                </div>
                 <div className="pt-2">
-                  <SaveBtn sectionId="about_location" keys={["about_location_title","about_location_address","about_location_schedule","about_location_image"]} />
+                  <SaveBtn sectionId="about_location" keys={["about_location_title","about_location_address","about_location_schedule","about_location_image","about_contact_button_text","about_contact_button_url"]} />
                 </div>
               </CardContent>
             </Card>
