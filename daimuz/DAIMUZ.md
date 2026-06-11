@@ -25,21 +25,21 @@ el archivo real del código
 
 ## 📁 Mapa del cerebro
 
-| Carpeta | Qué encontrarás |
-|---------|----------------|
-| `indexes/` | Navegación O(1): módulos, endpoints, tablas, archivos |
-| `modules/` | Un folder por módulo con `compressed.md` + docs completos |
-| `memory/` | Estado actual, changelog, features completas, bugs |
-| `governance/` | Reglas absolutas y por qué existen |
-| `architecture/` | Visión técnica por capa |
-| `context/` | Sprint actual, pendientes, entorno |
-| `brain/` | ADN: identidad, filosofía, estándares, nomenclatura |
-| `flows/` | Flujos end-to-end completos |
-| `decisions/` | ADRs: por qué se decidió cada cosa |
-| `synapses/` | Impacto entre módulos al cambiar algo |
-| `ontology/` | Qué ES cada entidad del dominio |
-| `vault/` | Referencia: api-routes, business-rules, darwin-core-fields, glossary, integrations |
-| `prompts/` | Plantillas de prompts para tareas comunes |
+| Carpeta         | Qué encontrarás                                                                    |
+| --------------- | ---------------------------------------------------------------------------------- |
+| `indexes/`      | Navegación O(1): módulos, endpoints, tablas, archivos                              |
+| `modules/`      | Un folder por módulo con `compressed.md` + docs completos                          |
+| `memory/`       | Estado actual, changelog, features completas, bugs                                 |
+| `governance/`   | Reglas absolutas y por qué existen                                                 |
+| `architecture/` | Visión técnica por capa                                                            |
+| `context/`      | Sprint actual, pendientes, entorno                                                 |
+| `brain/`        | ADN: identidad, filosofía, estándares, nomenclatura                                |
+| `flows/`        | Flujos end-to-end completos                                                        |
+| `decisions/`    | ADRs: por qué se decidió cada cosa                                                 |
+| `synapses/`     | Impacto entre módulos al cambiar algo                                              |
+| `ontology/`     | Qué ES cada entidad del dominio                                                    |
+| `vault/`        | Referencia: api-routes, business-rules, darwin-core-fields, glossary, integrations |
+| `prompts/`      | Plantillas de prompts para tareas comunes                                          |
 
 ## 🔴 Estado crítico actual
 

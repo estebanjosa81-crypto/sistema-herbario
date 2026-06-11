@@ -105,8 +105,8 @@ export default function SugerenciasPage() {
 
         setSugerencias(mappedSugerencias)
 
-        if (response.data.summary) {
-          setSummary(response.data.summary)
+        if ((response.data as any).summary) {
+          setSummary((response.data as any).summary)
         }
 
         // Configurar paginación

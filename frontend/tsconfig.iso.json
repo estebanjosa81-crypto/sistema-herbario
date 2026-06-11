@@ -1,0 +1,5 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": { "incremental": false, "plugins": [] },
+  "include": ["next-env.d.ts", "components/social-bar.tsx", "app/layout.tsx", "lib/use-public-settings.ts"]
+}

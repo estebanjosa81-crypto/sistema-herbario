@@ -210,12 +210,13 @@ export default function EditarPlantaPage() {
         })
 
         if (response.success && response.data) {
+          const data = response.data
           setUploadedImages(prev => prev.map(img =>
             img.file === file ? {
               ...img,
-              id: response.data.id,
-              serverUrl: response.data.url,
-              thumbnailUrl: response.data.thumbnailUrl,
+              id: data.id,
+              serverUrl: data.url,
+              thumbnailUrl: data.thumbnailUrl,
               isUploading: false,
               uploadFailed: false
             } : img

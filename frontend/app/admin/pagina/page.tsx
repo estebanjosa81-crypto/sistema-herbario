@@ -131,6 +131,7 @@ export default function PaginaAdminPage() {
     govbar: 'Institucional — Barra GOV.CO',
     quick: 'Institucional — Accesos rápidos',
     sidebar: 'Institucional — Sidebar de inicio',
+    social: 'Institucional — Redes sociales',
     footer_legal: 'Institucional — Datos legales del footer',
     about_header: 'Acerca — Encabezado e Historia',
     about_mission: 'Acerca — Misión y Visión',
@@ -1458,6 +1459,63 @@ export default function PaginaAdminPage() {
                 </Field>
                 <div className="pt-2">
                   <SaveBtn sectionId="footer_legal" keys={["footer_legal_info"]} />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Redes sociales — barra flotante lateral */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Redes sociales</CardTitle>
+                <CardDescription>
+                  Barra flotante que aparece pegada al borde de la pantalla. Pega la URL de cada red;
+                  las que dejes vacías no se mostrarán.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <Switch
+                    id="social_enabled"
+                    checked={settings.social_enabled === "true"}
+                    onCheckedChange={(v) => set("social_enabled", String(v))}
+                  />
+                  <Label htmlFor="social_enabled">Mostrar barra de redes sociales</Label>
+                </div>
+
+                <Field label="Posición" id="social_position" hint="Lado de la pantalla donde se ancla la barra">
+                  <Select value={str(settings.social_position) || "right"} onValueChange={(v) => set("social_position", v)}>
+                    <SelectTrigger id="social_position" className="max-w-[220px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="right">Derecha</SelectItem>
+                      <SelectItem value="left">Izquierda</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </Field>
+
+                <div className="grid md:grid-cols-2 gap-4">
+                  {([
+                    { key: "social_facebook_url",  label: "Facebook",  ph: "https://facebook.com/tu-pagina" },
+                    { key: "social_x_url",         label: "X (Twitter)", ph: "https://x.com/tu-cuenta" },
+                    { key: "social_instagram_url", label: "Instagram", ph: "https://instagram.com/tu-cuenta" },
+                    { key: "social_youtube_url",   label: "YouTube",   ph: "https://youtube.com/@tu-canal" },
+                    { key: "social_whatsapp_url",  label: "WhatsApp",  ph: "https://wa.me/57XXXXXXXXXX" },
+                    { key: "social_tiktok_url",    label: "TikTok",    ph: "https://tiktok.com/@tu-cuenta" },
+                    { key: "social_linkedin_url",  label: "LinkedIn",  ph: "https://linkedin.com/company/tu-pagina" },
+                  ] as const).map(({ key, label, ph }) => (
+                    <Field key={key} label={label} id={key}>
+                      <Input id={key} placeholder={ph} value={str(settings[key])} onChange={(e) => set(key, e.target.value)} />
+                    </Field>
+                  ))}
+                </div>
+
+                <div className="pt-2">
+                  <SaveBtn sectionId="social" keys={[
+                    "social_enabled","social_position",
+                    "social_facebook_url","social_x_url","social_instagram_url",
+                    "social_youtube_url","social_whatsapp_url","social_tiktok_url","social_linkedin_url",
+                  ]} />
                 </div>
               </CardContent>
             </Card>

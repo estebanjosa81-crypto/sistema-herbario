@@ -225,6 +225,16 @@ const PAGINA_SETTINGS = [
   { key_name: 'sidebar_info_text',    value: 'Lunes a viernes\n8:00 a.m. – 12:00 m. y 2:00 p.m. – 6:00 p.m.', type: 'string', description: 'Texto del bloque informativo del sidebar' },
   // Footer — datos legales
   { key_name: 'footer_legal_info',    value: 'Institución Universitaria del Putumayo · NIT 800.247.940-1\nSede Mocoa — Barrio Luis Carlos Galán, Mocoa, Putumayo, Colombia', type: 'string', description: 'Datos legales del footer (NIT, dirección)' },
+  // Redes sociales — barra flotante lateral
+  { key_name: 'social_enabled',       value: 'true',  type: 'boolean', description: 'Mostrar la barra flotante lateral de redes sociales' },
+  { key_name: 'social_position',      value: 'right', type: 'string',  description: 'Posición de la barra de redes: right o left' },
+  { key_name: 'social_facebook_url',  value: '',      type: 'string',  description: 'URL de la página de Facebook (vacío = oculto)' },
+  { key_name: 'social_x_url',         value: '',      type: 'string',  description: 'URL del perfil de X / Twitter (vacío = oculto)' },
+  { key_name: 'social_instagram_url', value: '',      type: 'string',  description: 'URL del perfil de Instagram (vacío = oculto)' },
+  { key_name: 'social_youtube_url',   value: '',      type: 'string',  description: 'URL del canal de YouTube (vacío = oculto)' },
+  { key_name: 'social_whatsapp_url',  value: '',      type: 'string',  description: 'Enlace de WhatsApp, ej: https://wa.me/57XXXXXXXXXX (vacío = oculto)' },
+  { key_name: 'social_tiktok_url',    value: '',      type: 'string',  description: 'URL del perfil de TikTok (vacío = oculto)' },
+  { key_name: 'social_linkedin_url',  value: '',      type: 'string',  description: 'URL del perfil de LinkedIn (vacío = oculto)' },
   // Login
   { key_name: 'login_bg_image',       value: 'https://www.floresyplantas.net/wp-content/uploads/psychotria-elata-1.jpg', type: 'string', description: 'URL de imagen de fondo del panel izquierdo de la página de login' },
   { key_name: 'login_bg_attribution', value: 'IERNA SINCHI',       type: 'string',  description: 'Atribución de la imagen de fondo del login' },
