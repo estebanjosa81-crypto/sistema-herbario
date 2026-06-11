@@ -24,6 +24,10 @@
     --input: 240 5.9% 90%;
     --ring: 142.1 76.2% 36.3%;
     --radius: 0.5rem;
+    /* Colores institucionales de marca (configurables desde /admin/pagina) */
+    --gov-green: #00833E;
+    --gov-dark: #005C2A;
+    --gov-yellow: #F0A500;
   }
 
   .dark {

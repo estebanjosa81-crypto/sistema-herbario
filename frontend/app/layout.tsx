@@ -7,6 +7,7 @@ import { AuthProvider } from "@/lib/auth-context"
 import Navbar from "@/components/navbar"
 import Footer from "@/components/footer"
 import SocialBar from "@/components/social-bar"
+import ThemeColors from "@/components/theme-colors"
 import { Toaster } from "@/components/ui/toaster"
 
 const inter = Inter({ subsets: ["latin"] })
@@ -26,6 +27,7 @@ export default function RootLayout({
     <html lang="es" suppressHydrationWarning>
       <body className={inter.className}>
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
+          <ThemeColors />
           <AuthProvider>
             <div className="flex min-h-screen flex-col">
               <Navbar />

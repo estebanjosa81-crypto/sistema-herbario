@@ -128,6 +128,7 @@ export default function PaginaAdminPage() {
     cloudinary: 'Cloudinary',
     logo: 'Logo y marca',
     footer: 'Pie de página',
+    theme: 'Institucional — Colores del tema',
     govbar: 'Institucional — Barra GOV.CO',
     quick: 'Institucional — Accesos rápidos',
     sidebar: 'Institucional — Sidebar de inicio',
@@ -1322,6 +1323,80 @@ export default function PaginaAdminPage() {
         {/* ── INSTITUCIONAL (tema GOV.CO) ─────────────────────────────────── */}
         <TabsContent value="institucional">
           <div className="space-y-4">
+
+            {/* Colores del tema */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Colores del tema</CardTitle>
+                <CardDescription>
+                  Define los colores institucionales. Se aplican en todo el portal público:
+                  navbar, botones, títulos de sección, footer y acentos.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid sm:grid-cols-3 gap-4">
+                  {([
+                    { key: "theme_primary",      label: "Verde principal", def: "#00833E", hint: "Navbar, botones y títulos" },
+                    { key: "theme_primary_dark", label: "Verde oscuro",    def: "#005C2A", hint: "Footer y hover del menú" },
+                    { key: "theme_accent",       label: "Amarillo de acento", def: "#F0A500", hint: "Detalles y subrayados" },
+                  ] as const).map(({ key, label, def, hint }) => {
+                    const val = str(settings[key]) || def
+                    return (
+                      <Field key={key} label={label} id={key} hint={hint}>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="color"
+                            value={val}
+                            onChange={(e) => set(key, e.target.value)}
+                            className="h-9 w-12 shrink-0 cursor-pointer rounded border bg-background p-0.5"
+                            aria-label={`Selector de color ${label}`}
+                          />
+                          <Input
+                            id={key}
+                            value={val}
+                            placeholder={def}
+                            onChange={(e) => set(key, e.target.value)}
+                            className="font-mono uppercase"
+                          />
+                        </div>
+                      </Field>
+                    )
+                  })}
+                </div>
+
+                {/* Vista previa */}
+                <div className="rounded-lg border overflow-hidden">
+                  <div
+                    className="px-4 py-2 text-white text-sm font-semibold"
+                    style={{ backgroundColor: str(settings.theme_primary) || "#00833E" }}
+                  >
+                    Vista previa — barra de navegación
+                  </div>
+                  <div className="flex items-center gap-3 p-4 bg-muted/30">
+                    <span
+                      className="inline-flex items-center rounded px-3 py-1.5 text-white text-xs font-semibold"
+                      style={{ backgroundColor: str(settings.theme_primary) || "#00833E" }}
+                    >
+                      Botón
+                    </span>
+                    <span
+                      className="inline-flex items-center rounded px-3 py-1.5 text-white text-xs font-semibold"
+                      style={{ backgroundColor: str(settings.theme_primary_dark) || "#005C2A" }}
+                    >
+                      Activo
+                    </span>
+                    <span className="inline-block h-6 w-1.5 rounded" style={{ backgroundColor: str(settings.theme_accent) || "#F0A500" }} />
+                    <span className="text-sm font-semibold" style={{ color: str(settings.theme_primary) || "#00833E" }}>
+                      Texto destacado
+                    </span>
+                  </div>
+                </div>
+
+                <div className="pt-2">
+                  <SaveBtn sectionId="theme" keys={["theme_primary","theme_primary_dark","theme_accent"]} />
+                </div>
+              </CardContent>
+            </Card>
 
             {/* Barra GOV.CO */}
             <Card>

@@ -28,9 +28,9 @@ const ICON_MAP: Record<string, React.ElementType> = {
 }
 
 // Paleta institucional GOV.CO
-const GOV_GREEN = "#00833E"
-const GOV_DARK = "#005C2A"
-const GOV_YELLOW = "#F0A500"
+const GOV_GREEN = "var(--gov-green)"
+const GOV_DARK = "var(--gov-dark)"
+const GOV_YELLOW = "var(--gov-yellow)"
 
 const getIcon = (name: string) => ICON_MAP[name] ?? Leaf
 

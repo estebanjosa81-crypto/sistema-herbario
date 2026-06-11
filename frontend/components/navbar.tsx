@@ -10,9 +10,9 @@ import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/s
 import { Menu, Leaf, CircleUser, Search } from "lucide-react"
 import { usePublicSettings } from "@/lib/use-public-settings"
 
-const GOV_GREEN = "#00833E"
-const GOV_DARK = "#005C2A"
-const GOV_YELLOW = "#F0A500"
+const GOV_GREEN = "var(--gov-green)"
+const GOV_DARK = "var(--gov-dark)"
+const GOV_YELLOW = "var(--gov-yellow)"
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false)

@@ -6,8 +6,8 @@ import { usePathname } from "next/navigation"
 import { SuggestionForm } from "@/components/suggestion-form"
 import { usePublicSettings } from "@/lib/use-public-settings"
 
-const GOV_DARK = "#005C2A"
-const GOV_YELLOW = "#F0A500"
+const GOV_DARK = "var(--gov-dark)"
+const GOV_YELLOW = "var(--gov-yellow)"
 
 // Renderiza un enlace del footer: si url está vacía, muestra texto plano
 function FooterLink({ text, url }: { text: string; url: string }) {

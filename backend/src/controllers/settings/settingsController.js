@@ -193,6 +193,9 @@ const PAGINA_SETTINGS = [
   { key_name: 'about_cta_button_text',  value: 'Conoce cómo colaborar',        type: 'string', description: 'Texto botón CTA (Acerca de)' },
   { key_name: 'about_cta_button_url',   value: '/contacto',                    type: 'string', description: 'URL botón CTA (Acerca de)' },
   // ── Tema institucional GOV.CO
+  { key_name: 'theme_primary',        value: '#00833E', type: 'string', description: 'Color verde principal del tema (navbar, botones, títulos)' },
+  { key_name: 'theme_primary_dark',   value: '#005C2A', type: 'string', description: 'Verde oscuro del tema (footer, hover de menú)' },
+  { key_name: 'theme_accent',         value: '#F0A500', type: 'string', description: 'Color de acento amarillo del tema' },
   { key_name: 'govbar_enabled',       value: 'true',            type: 'boolean', description: 'Mostrar barra superior GOV.CO' },
   { key_name: 'govbar_text',          value: 'GOV.CO',          type: 'string',  description: 'Texto de la barra superior institucional' },
   { key_name: 'govbar_url',           value: 'https://www.gov.co', type: 'string', description: 'URL de la barra superior institucional' },
