@@ -80,6 +80,8 @@ const PAGINA_SETTINGS = [
   { key_name: 'about_title',            value: 'Herbario HEAA',                type: 'string', description: 'Título principal de la página Acerca de' },
   { key_name: 'about_subtitle',         value: 'Institución Universitaria del Putumayo (Uniputumayo) - Mocoa', type: 'string', description: 'Subtítulo de la página Acerca de' },
   { key_name: 'about_header_logo',      value: '/images/logo-uniputumayo.png', type: 'string', description: 'URL del logo del encabezado (Acerca de)' },
+  { key_name: 'about_hero_image',       value: '',                             type: 'string', description: 'URL imagen de fondo del hero (Acerca de). Si vacío, usa gradiente institucional.' },
+  { key_name: 'about_hero_kicker',      value: 'Herbario HEAA · Uniputumayo',  type: 'string', description: 'Etiqueta superior del hero (Acerca de)' },
   // ── Acerca de — Historia
   { key_name: 'about_history_image',    value: '',                             type: 'string', description: 'URL imagen sección Historia (Acerca de)' },
   { key_name: 'about_history_title',    value: 'Nuestra Historia',             type: 'string', description: 'Título sección Historia' },

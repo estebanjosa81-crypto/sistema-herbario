@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import React, { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -75,6 +75,7 @@ const PLANTILLAS_DEFAULT: Plantilla[] = [
 ]
 
 const LS_KEY = 'heaa_plantillas_v1'
+const LS_DEFAULT_KEY = 'heaa_plantillas_defaults_v1' // { institucion?: id, coleccion?: id, ubicacion?: id }
 
 const loadPlantillas = (): Plantilla[] => {
   try {
@@ -87,9 +88,20 @@ const savePlantillas = (list: Plantilla[]) => {
   localStorage.setItem(LS_KEY, JSON.stringify(list))
 }
 
+const loadDefaults = (): Record<TipoPlantilla, string | null> => {
+  try {
+    const raw = localStorage.getItem(LS_DEFAULT_KEY)
+    return raw ? JSON.parse(raw) : { institucion: null, coleccion: null, ubicacion: null }
+  } catch { return { institucion: null, coleccion: null, ubicacion: null } }
+}
+
+const saveDefaults = (d: Record<TipoPlantilla, string | null>) => {
+  localStorage.setItem(LS_DEFAULT_KEY, JSON.stringify(d))
+}
+
 // ── PlantillaDropdown (fuera del componente principal para evitar remount en cada render) ──
 function PlantillaDropdown({
-  tipo, plantillas: list, open, onToggle, onApply, onNew, onEdit, onDelete
+  tipo, plantillas: list, open, onToggle, onApply, onNew, onEdit, onDelete, defaultId, onSetDefault,
 }: {
   tipo: TipoPlantilla
   plantillas: Plantilla[]
@@ -99,6 +111,8 @@ function PlantillaDropdown({
   onNew: () => void
   onEdit: (p: Plantilla) => void
   onDelete: (id: string) => void
+  defaultId: string | null
+  onSetDefault: (id: string | null) => void
 }) {
   const items = list.filter(p => p.tipo === tipo)
   return (
@@ -107,7 +121,7 @@ function PlantillaDropdown({
         <LayoutTemplate className="mr-2 h-4 w-4" />Plantillas<ChevronDown className="ml-1 h-3 w-3" />
       </Button>
       {open && (
-        <div className="absolute right-0 top-9 z-50 w-64 rounded-md border bg-background shadow-lg">
+        <div className="absolute right-0 top-9 z-50 w-72 rounded-md border bg-background shadow-lg">
           <div className="flex items-center justify-between px-3 pt-2 pb-1 border-b">
             <span className="text-xs font-medium text-muted-foreground">Plantillas guardadas</span>
             <button type="button" onClick={onNew}
@@ -118,21 +132,43 @@ function PlantillaDropdown({
           {items.length === 0 && (
             <p className="px-3 py-3 text-xs text-muted-foreground text-center">Sin plantillas. Crea una con "+ Nueva".</p>
           )}
-          {items.map(p => (
-            <div key={p.id} className="flex items-center gap-1 px-2 py-1.5 hover:bg-muted group">
-              <button type="button" className="flex-1 text-left text-sm px-1 truncate" onClick={() => onApply(p)}>
-                {p.nombre}
-              </button>
-              <button type="button" onClick={() => onEdit(p)} title="Editar"
-                className="opacity-0 group-hover:opacity-100 p-1 hover:text-primary transition-opacity">
-                <Pencil className="h-3 w-3" />
-              </button>
-              <button type="button" onClick={() => onDelete(p.id)} title="Eliminar"
-                className="opacity-0 group-hover:opacity-100 p-1 hover:text-destructive transition-opacity">
-                <Trash2 className="h-3 w-3" />
-              </button>
+          {items.map(p => {
+            const isDefault = p.id === defaultId
+            return (
+              <div key={p.id} className="flex items-center gap-1 px-2 py-1.5 hover:bg-muted group">
+                {/* Estrella de predeterminada */}
+                <button
+                  type="button"
+                  title={isDefault ? 'Quitar predeterminada' : 'Marcar como predeterminada'}
+                  onClick={e => { e.stopPropagation(); onSetDefault(isDefault ? null : p.id) }}
+                  className={`p-1 transition-colors shrink-0 ${isDefault ? 'text-yellow-500' : 'opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-yellow-500'}`}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+                    fill={isDefault ? 'currentColor' : 'none'}
+                    stroke="currentColor" strokeWidth="2" className="h-3.5 w-3.5">
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                  </svg>
+                </button>
+                <button type="button" className="flex-1 text-left text-sm px-1 truncate" onClick={() => onApply(p)}>
+                  {p.nombre}
+                  {isDefault && <span className="ml-1.5 text-xs text-yellow-600 font-medium">predeterminada</span>}
+                </button>
+                <button type="button" onClick={() => onEdit(p)} title="Editar"
+                  className="opacity-0 group-hover:opacity-100 p-1 hover:text-primary transition-opacity">
+                  <Pencil className="h-3 w-3" />
+                </button>
+                <button type="button" onClick={() => onDelete(p.id)} title="Eliminar"
+                  className="opacity-0 group-hover:opacity-100 p-1 hover:text-destructive transition-opacity">
+                  <Trash2 className="h-3 w-3" />
+                </button>
+              </div>
+            )
+          })}
+          {defaultId && items.some(p => p.id === defaultId) && (
+            <div className="px-3 py-2 border-t">
+              <p className="text-xs text-muted-foreground">★ Se aplica automáticamente al abrir el formulario</p>
             </div>
-          ))}
+          )}
         </div>
       )}
     </div>
@@ -202,6 +238,273 @@ function PlantillaModal({
   )
 }
 
+// ── RecordedByInput ───────────────────────────────────────────────────────────
+// Input con buscador de colectores (usuarios BD + recorded_by históricos).
+// Si el nombre no existe solo se usa el texto libre.
+function RecordedByInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [results, setResults]   = React.useState<string[]>([])
+  const [open, setOpen]         = React.useState(false)
+  const [loading, setLoading]   = React.useState(false)
+  const debounceRef = React.useRef<ReturnType<typeof setTimeout> | null>(null)
+  const wrapperRef  = React.useRef<HTMLDivElement>(null)
+
+  React.useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  const handleChange = (val: string) => {
+    onChange(val)
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    if (!val.trim()) { setResults([]); setOpen(false); return }
+    debounceRef.current = setTimeout(async () => {
+      setLoading(true)
+      try {
+        const res = await apiService.getCollectors(val)
+        if (res.success && res.data?.collectors?.length) {
+          setResults(res.data.collectors)
+          setOpen(true)
+        } else {
+          setResults([])
+          setOpen(false)
+        }
+      } catch { } finally { setLoading(false) }
+    }, 300)
+  }
+
+  const pick = (name: string) => {
+    onChange(name)
+    setOpen(false)
+    setResults([])
+  }
+
+  return (
+    <div ref={wrapperRef} className="relative">
+      <div className="relative">
+        <Input
+          placeholder="Ej. Andrés Orejuela"
+          required
+          value={value}
+          autoComplete="off"
+          onChange={e => handleChange(e.target.value)}
+          onFocus={() => { if (results.length) setOpen(true) }}
+        />
+        {loading && <Loader2 className="absolute right-2.5 top-2.5 h-4 w-4 animate-spin text-muted-foreground" />}
+      </div>
+      {open && results.length > 0 && (
+        <div className="absolute left-0 right-0 top-full z-50 mt-1 rounded-md border bg-background shadow-lg max-h-48 overflow-y-auto">
+          {results.map((name, i) => (
+            <button
+              key={`${name}-${i}`}
+              type="button"
+              className="w-full text-left px-3 py-2 text-sm hover:bg-muted transition-colors"
+              onClick={() => pick(name)}
+            >
+              {name}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── CollectionCard ────────────────────────────────────────────────────────────
+// Buscador de colecciones existentes en la BD + opción de crear una nueva.
+// Se extrae del componente principal para evitar remounts en cada render.
+function CollectionCard({
+  collectionCode, collectionID, onChange,
+  plantillas, plantillaMenuOpen, onTogglePlantillaMenu,
+  onApplyPlantilla, onNewPlantilla, onEditPlantilla, onDeletePlantilla,
+  defaultPlantillaId, onSetDefaultPlantilla,
+}: {
+  collectionCode: string
+  collectionID: string
+  onChange: (code: string, id: string) => void
+  plantillas: Plantilla[]
+  plantillaMenuOpen: boolean
+  onTogglePlantillaMenu: () => void
+  onApplyPlantilla: (p: Plantilla) => void
+  onNewPlantilla: () => void
+  onEditPlantilla: (p: Plantilla) => void
+  onDeletePlantilla: (id: string) => void
+  defaultPlantillaId: string | null
+  onSetDefaultPlantilla: (id: string | null) => void
+}) {
+  const [query, setQuery] = React.useState(collectionCode)
+  const [results, setResults] = React.useState<{ code: string; id: string }[]>([])
+  const [open, setOpen] = React.useState(false)
+  const [loading, setLoading] = React.useState(false)
+  const [mode, setMode] = React.useState<'search' | 'new'>('search')
+  const debounceRef = React.useRef<ReturnType<typeof setTimeout> | null>(null)
+  const wrapperRef = React.useRef<HTMLDivElement>(null)
+
+  // Sincronizar query cuando el padre cambia collectionCode (ej. plantilla aplicada)
+  React.useEffect(() => { setQuery(collectionCode) }, [collectionCode])
+
+  // Cerrar dropdown al hacer click fuera
+  React.useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  const search = (q: string) => {
+    setQuery(q)
+    onChange(q, q === collectionCode ? collectionID : '') // limpiar id si el código cambia
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    if (!q.trim()) { setResults([]); setOpen(false); return }
+    debounceRef.current = setTimeout(async () => {
+      setLoading(true)
+      try {
+        const res = await apiService.getCollections(q)
+        if (res.success && res.data) {
+          setResults(res.data.collections)
+          setOpen(true)
+        }
+      } catch { } finally { setLoading(false) }
+    }, 300)
+  }
+
+  const pick = (col: { code: string; id: string }) => {
+    setQuery(col.code)
+    onChange(col.code, col.id)
+    setOpen(false)
+    setMode('search')
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-start justify-between">
+          <div>
+            <CardTitle>Colección</CardTitle>
+            <CardDescription>Busca una colección existente o crea una nueva</CardDescription>
+          </div>
+          <PlantillaDropdown
+            tipo="coleccion"
+            plantillas={plantillas}
+            open={plantillaMenuOpen}
+            onToggle={onTogglePlantillaMenu}
+            onApply={onApplyPlantilla}
+            onNew={onNewPlantilla}
+            onEdit={onEditPlantilla}
+            onDelete={onDeletePlantilla}
+            defaultId={defaultPlantillaId}
+            onSetDefault={onSetDefaultPlantilla}
+          />
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {/* Tabs search / nueva */}
+        <div className="flex gap-2 border-b pb-2">
+          <button type="button"
+            className={`text-sm px-3 py-1 rounded-md transition-colors ${mode === 'search' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+            onClick={() => setMode('search')}>
+            Buscar existente
+          </button>
+          <button type="button"
+            className={`text-sm px-3 py-1 rounded-md transition-colors ${mode === 'new' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+            onClick={() => setMode('new')}>
+            + Nueva colección
+          </button>
+        </div>
+
+        {mode === 'search' ? (
+          <div ref={wrapperRef} className="relative space-y-3">
+            {/* Input buscador */}
+            <div className="space-y-1">
+              <Label htmlFor="collectionSearch">Código de la colección</Label>
+              <div className="relative">
+                <Input
+                  id="collectionSearch"
+                  placeholder="Ej. HEAA, HEAA-MOC…"
+                  value={query}
+                  autoComplete="off"
+                  onChange={e => search(e.target.value)}
+                  onFocus={() => { if (results.length) setOpen(true) }}
+                />
+                {loading && <Loader2 className="absolute right-2.5 top-2.5 h-4 w-4 animate-spin text-muted-foreground" />}
+              </div>
+            </div>
+
+            {/* Dropdown de resultados */}
+            {open && results.length > 0 && (
+              <div className="absolute left-0 right-0 top-full z-50 mt-1 rounded-md border bg-background shadow-lg max-h-56 overflow-y-auto">
+                {results.map((col, i) => (
+                  <button
+                    key={`${col.code}-${i}`}
+                    type="button"
+                    className="w-full flex items-center justify-between px-3 py-2 text-left hover:bg-muted transition-colors"
+                    onClick={() => pick(col)}
+                  >
+                    <div>
+                      <span className="font-medium text-sm">{col.code}</span>
+                      {col.id && <span className="ml-2 text-xs text-muted-foreground">ID: {col.id}</span>}
+                    </div>
+                    <CheckCircle2 className={`h-4 w-4 shrink-0 ${col.code === collectionCode ? 'text-green-600' : 'opacity-0'}`} />
+                  </button>
+                ))}
+              </div>
+            )}
+            {open && results.length === 0 && !loading && query.trim() && (
+              <div className="absolute left-0 right-0 top-full z-50 mt-1 rounded-md border bg-background shadow-lg px-3 py-3 text-sm text-muted-foreground text-center">
+                No encontrado — usa "Nueva colección" para crearla
+              </div>
+            )}
+
+            {/* ID auto-llenado */}
+            {collectionID && (
+              <div className="flex items-center gap-2 rounded-md bg-green-50 border border-green-200 px-3 py-2 text-sm">
+                <CheckCircle2 className="h-4 w-4 text-green-600 shrink-0" />
+                <span className="text-green-700">ID recuperado: <strong>{collectionID}</strong></span>
+              </div>
+            )}
+            {collectionCode && !collectionID && (
+              <p className="text-xs text-muted-foreground">
+                El catálogo se generará como <strong>{collectionCode}-001</strong>
+              </p>
+            )}
+          </div>
+        ) : (
+          /* Modo nueva colección */
+          <div className="space-y-3">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-1">
+                <Label htmlFor="collectionCodeNew">Código *</Label>
+                <Input
+                  id="collectionCodeNew"
+                  placeholder="Ej. HEAA-MOC"
+                  value={collectionCode}
+                  onChange={e => onChange(e.target.value.toUpperCase(), collectionID)}
+                />
+                <p className="text-xs text-muted-foreground">Catálogo: <strong>{collectionCode || 'CÓDIGO'}-001</strong></p>
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="collectionIDNew">ID GRSciColl</Label>
+                <Input
+                  id="collectionIDNew"
+                  placeholder="Ej. HEAA-ITP (opcional)"
+                  value={collectionID}
+                  onChange={e => onChange(collectionCode, e.target.value)}
+                />
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground bg-muted/50 rounded px-2 py-1.5">
+              Al guardar, esta colección quedará disponible para futuros especímenes.
+            </p>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
 export default function NuevaPlantaPage() {
   const router = useRouter()
   const { toast } = useToast()
@@ -232,8 +535,27 @@ export default function NuevaPlantaPage() {
   const allVisited = REQUIRED_TABS.every(t => visitedTabs.has(t))
   const canPublish = allSaved || allVisited
 
+  // ── Estados geografía (países / estados / ciudades) ──────────────────────────
+  const [geoCountries, setGeoCountries]   = useState<string[]>([])
+  const [geoStates, setGeoStates]         = useState<string[]>([])
+  const [geoCities, setGeoCities]         = useState<string[]>([])
+  const [geoLoadingStates, setGeoLoadingStates] = useState(false)
+  const [geoLoadingCities, setGeoLoadingCities] = useState(false)
+
+  // Cargar países al montar
+  useEffect(() => {
+    apiService.geoGetCountries().then(res => {
+      if (res.success && res.data) setGeoCountries(res.data.countries)
+    }).catch(() => {})
+  }, [])
+
   // ── Estados para features de asistencia ─────────────────────────────────────
   const [gbifLoading, setGbifLoading] = useState(false)
+  const [gbifSuggestions, setGbifSuggestions] = useState<any[]>([])
+  const [gbifDropdownOpen, setGbifDropdownOpen] = useState(false)
+  const [gbifSuggestLoading, setGbifSuggestLoading] = useState(false)
+  const gbifDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const gbifDropdownRef = useRef<HTMLDivElement>(null)
   const [gpsLoading, setGpsLoading] = useState(false)
   const [copySearch, setCopySearch] = useState('')
   const [copyResults, setCopyResults] = useState<any[]>([])
@@ -242,11 +564,39 @@ export default function NuevaPlantaPage() {
 
   // ── Plantillas CRUD ───────────────────────────────────────────────────────
   const [plantillas, setPlantillas] = useState<Plantilla[]>([])
-  const [plantillaMenu, setPlantillaMenu] = useState<TipoPlantilla | null>(null) // qué menú dropdown está abierto
+  const [plantillaDefaults, setPlantillaDefaults] = useState<Record<TipoPlantilla, string | null>>({ institucion: null, coleccion: null, ubicacion: null })
+  const [plantillaMenu, setPlantillaMenu] = useState<TipoPlantilla | null>(null)
   const [plantillaModal, setPlantillaModal] = useState<{ tipo: TipoPlantilla; editing: Plantilla | null } | null>(null)
   const [plantillaForm, setPlantillaForm] = useState<{ nombre: string; campos: Record<string, string> }>({ nombre: '', campos: {} })
 
-  useEffect(() => { setPlantillas(loadPlantillas()) }, [])
+  useEffect(() => {
+    const list = loadPlantillas()
+    const defaults = loadDefaults()
+    setPlantillas(list)
+    setPlantillaDefaults(defaults)
+    // Aplicar automáticamente las plantillas predeterminadas al montar
+    const patch: Record<string, string> = {}
+    ;(['institucion', 'coleccion', 'ubicacion'] as TipoPlantilla[]).forEach(tipo => {
+      const id = defaults[tipo]
+      if (!id) return
+      const p = list.find(x => x.id === id)
+      if (p) Object.assign(patch, p.campos)
+    })
+    // Pre-llenar "Registrado por" con el nombre del usuario autenticado
+    apiService.me().then(res => {
+      if (res.success && res.data?.name) {
+        setFormData(prev => ({
+          ...prev,
+          ...patch,
+          recordedBy: prev.recordedBy || res.data!.name,
+        }))
+      } else if (Object.keys(patch).length > 0) {
+        setFormData(prev => ({ ...prev, ...patch }))
+      }
+    }).catch(() => {
+      if (Object.keys(patch).length > 0) setFormData(prev => ({ ...prev, ...patch }))
+    })
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const CAMPOS_INSTITUCION: { key: string; label: string; placeholder: string }[] = [
     { key: 'institutionCode', label: 'Nombre de la institución', placeholder: 'Institución Universitaria del Putumayo (UNIP)' },
@@ -298,7 +648,30 @@ export default function NuevaPlantaPage() {
     const updated = plantillas.filter(p => p.id !== id)
     setPlantillas(updated)
     savePlantillas(updated)
+    // Si era predeterminada, limpiar el default
+    const newDefaults = { ...plantillaDefaults }
+    let changed = false
+    ;(['institucion', 'coleccion', 'ubicacion'] as TipoPlantilla[]).forEach(tipo => {
+      if (newDefaults[tipo] === id) { newDefaults[tipo] = null; changed = true }
+    })
+    if (changed) { setPlantillaDefaults(newDefaults); saveDefaults(newDefaults) }
     toast({ title: 'Plantilla eliminada' })
+  }
+
+  const setPlantillaDefault = (tipo: TipoPlantilla, id: string | null) => {
+    const newDefaults = { ...plantillaDefaults, [tipo]: id }
+    setPlantillaDefaults(newDefaults)
+    saveDefaults(newDefaults)
+    if (id) {
+      const p = plantillas.find(x => x.id === id)
+      if (p) {
+        setFormData(prev => ({ ...prev, ...p.campos }))
+        toast({ title: `"${p.nombre}" marcada como predeterminada`, description: 'Se aplicará automáticamente la próxima vez.' })
+      }
+    } else {
+      toast({ title: 'Predeterminada eliminada' })
+    }
+    setPlantillaMenu(null)
   }
 
   const applyPlantilla = (p: Plantilla) => {
@@ -334,46 +707,95 @@ export default function NuevaPlantaPage() {
     setAcSuggestions(p => ({ ...p, [field]: [] }))
   }
 
-  // ── GBIF: rellenar taxonomía desde nombre científico ─────────────────────
-  // La API /species/match devuelve authorship dentro de scientificName, no como campo separado.
-  // Ej: scientificName="Solanum abiaguense Knapp", canonicalName="Solanum abiaguense"
-  // → authorship = "Knapp"
+  // ── GBIF: helper para aplicar un resultado al formulario ────────────────
+  const applyGbifData = (data: any) => {
+    // El backend devuelve scientificNameAuthorship directo.
+    // Fallback: extraerla restando canonicalName del scientificName crudo de GBIF.
+    const authorship = data.scientificNameAuthorship
+      || ((data.scientificName && data.canonicalName)
+          ? data.scientificName.replace(data.canonicalName, '').trim()
+          : '')
+    const epithet = data.specificEpithet
+      || data.canonicalName?.split(' ')[1]
+      || data.species?.split(' ')[1]
+      || ''
+    const rank = data.taxonRank || data.rank?.toLowerCase() || ''
+    setFormData(prev => ({
+      ...prev,
+      family:                   data.family    || prev.family,
+      orderName:                data.orderName || data.order || prev.orderName,
+      class:                    data.class     || prev.class,
+      phylum:                   data.phylum    || prev.phylum,
+      kingdom:                  data.kingdom   || prev.kingdom,
+      genus:                    data.genus     || prev.genus,
+      specificEpithet:          epithet        || prev.specificEpithet,
+      scientificNameAuthorship: authorship     || prev.scientificNameAuthorship,
+      taxonRank:                rank           || prev.taxonRank,
+    }))
+  }
+
+  // ── GBIF: autocompletar mientras se escribe (suggest API) ────────────────
+  const handleScientificNameChange = (value: string) => {
+    handleInputChange('scientificName', value)
+    setGbifDropdownOpen(false)
+    setGbifSuggestions([])
+
+    if (gbifDebounceRef.current) clearTimeout(gbifDebounceRef.current)
+    if (value.trim().length < 3) return
+
+    gbifDebounceRef.current = setTimeout(async () => {
+      setGbifSuggestLoading(true)
+      try {
+        const res = await apiService.gbifSuggest(value.trim())
+        if (res.success && res.data?.suggestions.length) {
+          setGbifSuggestions(res.data.suggestions)
+          setGbifDropdownOpen(true)
+        }
+      } catch {
+        // silenciar errores en autocompletar
+      } finally {
+        setGbifSuggestLoading(false)
+      }
+    }, 400)
+  }
+
+  // ── GBIF: seleccionar sugerencia → match completo → rellenar campos ──────
+  const selectGbifSuggestion = async (suggestion: any) => {
+    setGbifDropdownOpen(false)
+    setGbifSuggestions([])
+    handleInputChange('scientificName', suggestion.canonicalName)
+    setGbifLoading(true)
+    try {
+      const res = await apiService.gbifMatch(suggestion.canonicalName)
+      if (res.success && res.data?.found) {
+        applyGbifData(res.data)
+        toast({ title: '✅ Taxonomía completada desde GBIF', description: `Familia: ${res.data.family} · Confianza: ${res.data.confidence}%` })
+      } else {
+        // fallback: usar los campos que trajo suggest
+        applyGbifData(suggestion)
+        toast({ title: '✅ Taxonomía aplicada desde GBIF', description: `Familia: ${suggestion.family || '—'}` })
+      }
+    } catch (err: any) {
+      toast({ title: 'Error al consultar GBIF', description: err.message, variant: 'destructive' })
+    } finally {
+      setGbifLoading(false)
+    }
+  }
+
+  // ── GBIF: botón manual ✨ (usa el nombre ya escrito) ─────────────────────
   const fetchGbifTaxonomy = async () => {
     const name = formData.scientificName.trim()
     if (!name) return
+    setGbifDropdownOpen(false)
     setGbifLoading(true)
     try {
-      const res = await fetch(`https://api.gbif.org/v1/species/match?name=${encodeURIComponent(name)}&kingdom=Plantae`, {
-        headers: { 'Accept': 'application/json' }
-      })
-      if (!res.ok) throw new Error(`GBIF respondió ${res.status}`)
-      const data = await res.json()
-      if (data.matchType === 'NONE') {
+      const res = await apiService.gbifMatch(name)
+      if (!res.success || !res.data?.found) {
         toast({ title: 'No encontrado en GBIF', description: `"${name}" no arrojó resultados. Verifica el nombre.`, variant: 'destructive' })
         return
       }
-      // Extraer autoría: scientificName - canonicalName
-      const authorship = (data.scientificName && data.canonicalName)
-        ? data.scientificName.replace(data.canonicalName, '').trim()
-        : ''
-      // Epíteto: segunda palabra de canonicalName (ej. "Solanum abiaguense" → "abiaguense")
-      const epithet = data.canonicalName?.split(' ')[1] || data.species?.split(' ')[1] || ''
-      // rank: GBIF devuelve "SPECIES" en mayúsculas
-      const rank = data.rank?.toLowerCase() || ''
-
-      setFormData(prev => ({
-        ...prev,
-        family:                   data.family   || prev.family,
-        orderName:                data.order    || prev.orderName,
-        class:                    data.class    || prev.class,
-        phylum:                   data.phylum   || prev.phylum,
-        kingdom:                  data.kingdom  || prev.kingdom,
-        genus:                    data.genus    || prev.genus,
-        specificEpithet:          epithet       || prev.specificEpithet,
-        scientificNameAuthorship: authorship    || prev.scientificNameAuthorship,
-        taxonRank:                rank          || prev.taxonRank,
-      }))
-      toast({ title: '✅ Taxonomía completada desde GBIF', description: `Familia: ${data.family} · Confianza: ${data.confidence}%` })
+      applyGbifData(res.data)
+      toast({ title: '✅ Taxonomía completada desde GBIF', description: `Familia: ${res.data.family} · Confianza: ${res.data.confidence}%` })
     } catch (err: any) {
       toast({ title: 'Error al consultar GBIF', description: err.message || 'Verifica tu conexión a internet.', variant: 'destructive' })
     } finally {
@@ -466,8 +888,8 @@ export default function NuevaPlantaPage() {
   const [formData, setFormData] = useState({
     // Cols 1-3: Registro básico
     occurrenceID: '',
-    basisOfRecord: '',
-    type: '',
+    basisOfRecord: 'preservedSpecimen',
+    type: 'physicalObject',
     // Cols 4-7: Institución
     institutionCode: 'Institución Universitaria del Putumayo (UNIP)',
     institutionID: '800.247.940',
@@ -540,6 +962,28 @@ export default function NuevaPlantaPage() {
     setFormData(prev => ({ ...prev, [field]: value }))
   }
 
+  // ── Effects geográficos (deben ir DESPUÉS de formData) ────────────────────
+  // Cargar departamentos cuando cambia el país
+  useEffect(() => {
+    if (!formData.country) { setGeoStates([]); setGeoCities([]); return }
+    setGeoLoadingStates(true)
+    setGeoStates([])
+    setGeoCities([])
+    apiService.geoGetStates(formData.country).then(res => {
+      if (res.success && res.data) setGeoStates(res.data.states)
+    }).catch(() => {}).finally(() => setGeoLoadingStates(false))
+  }, [formData.country])
+
+  // Cargar municipios cuando cambia el departamento
+  useEffect(() => {
+    if (!formData.country || !formData.stateProvince) { setGeoCities([]); return }
+    setGeoLoadingCities(true)
+    setGeoCities([])
+    apiService.geoGetCities(formData.country, formData.stateProvince).then(res => {
+      if (res.success && res.data) setGeoCities(res.data.cities)
+    }).catch(() => {}).finally(() => setGeoLoadingCities(false))
+  }, [formData.country, formData.stateProvince])
+
   // ── Ref para saber si occurrenceID fue editado manualmente ─────────────────
   const occurrenceManualRef = useRef(false)
 
@@ -556,8 +1000,8 @@ export default function NuevaPlantaPage() {
     const prefix = (formData.collectionCode || 'HEAA').trim().toUpperCase()
     setCatalogLoading(true)
     try {
-      // Buscar por catalog_number con el prefijo exacto, en todos los estados
       const res = await apiService.getPlants({ catalog_number: prefix, status: 'all', limit: 500 })
+      let next = 1
       if (res.success && res.data) {
         const plants = res.data.plants as any[]
         const nums = plants
@@ -565,13 +1009,17 @@ export default function NuevaPlantaPage() {
           .filter((c: string) => c.startsWith(prefix + '-'))
           .map((c: string) => parseInt(c.slice(prefix.length + 1), 10))
           .filter((n: number) => !isNaN(n))
-        const next = nums.length > 0 ? Math.max(...nums) + 1 : 1
-        handleInputChange('catalogNumber', `${prefix}-${String(next).padStart(3, '0')}`)
-      } else {
-        handleInputChange('catalogNumber', `${prefix}-001`)
+        if (nums.length > 0) next = Math.max(...nums) + 1
       }
+      const catalogNum = `${prefix}-${String(next).padStart(3, '0')}`
+      // Iniciales del colector para el número de registro (ej. "Andrés Orejuela" → "AO")
+      const initials = formData.recordedBy
+        .split(/[\s/,]+/).map((w: string) => w[0]?.toUpperCase() ?? '').join('').slice(0, 4)
+      const recordNum = initials ? `${initials}${String(next).padStart(4, '0')}` : `R${String(next).padStart(4, '0')}`
+      setFormData(prev => ({ ...prev, catalogNumber: catalogNum, recordNumber: recordNum }))
     } catch {
-      handleInputChange('catalogNumber', `${prefix}-001`)
+      const catalogNum = `${prefix}-001`
+      setFormData(prev => ({ ...prev, catalogNumber: catalogNum }))
     } finally {
       setCatalogLoading(false)
     }
@@ -677,8 +1125,6 @@ export default function NuevaPlantaPage() {
       // Identificación (cols 32-35)
       identified_by: formData.identifiedBy || null,
       date_identified: dateToNull(formData.dateIdentified),
-      determination_date: dateToNull(formData.dateIdentified),
-      determined_by: formData.identifiedBy || null,
       updated_by: formData.updatedBy || null,
       date_updated: dateToNull(formData.dateUpdated),
       type_status: 'none',
@@ -735,7 +1181,7 @@ export default function NuevaPlantaPage() {
       // Uso y conservación
       uses: formData.uses || null,
       care_instructions: null,
-      conservation_status: 'NE',
+      conservation_status: formData.conservation_status || 'No evaluada',
       // Sistema
       status: 'draft',
       featured: false,
@@ -1092,6 +1538,8 @@ export default function NuevaPlantaPage() {
                     onNew={() => openNewPlantilla('institucion')}
                     onEdit={openEditPlantilla}
                     onDelete={deletePlantilla}
+                    defaultId={plantillaDefaults.institucion}
+                    onSetDefault={id => setPlantillaDefault('institucion', id)}
                   />
                 </div>
               </CardHeader>
@@ -1112,42 +1560,23 @@ export default function NuevaPlantaPage() {
             </Card>
 
             {/* cols 6-7: Colección */}
-            <Card>
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div>
-                    <CardTitle>Colección</CardTitle>
-                    <CardDescription>Código e ID de la colección específica donde se ingresa el espécimen</CardDescription>
-                  </div>
-                  <PlantillaDropdown
-                    tipo="coleccion"
-                    plantillas={plantillas}
-                    open={plantillaMenu === 'coleccion'}
-                    onToggle={() => setPlantillaMenu(p => p === 'coleccion' ? null : 'coleccion')}
-                    onApply={applyPlantilla}
-                    onNew={() => openNewPlantilla('coleccion')}
-                    onEdit={openEditPlantilla}
-                    onDelete={deletePlantilla}
-                  />
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="collectionCode">Código de la colección</Label>
-                    <Input id="collectionCode" placeholder="Ej. HEAA-MOC"
-                      value={formData.collectionCode}
-                      onChange={e => handleInputChange('collectionCode', e.target.value)} />
-                    <p className="text-xs text-muted-foreground">El catálogo se generará como <strong>{formData.collectionCode || 'CÓDIGO'}-001</strong></p>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="collectionID">ID de la colección (GRSciColl)</Label>
-                    <Input id="collectionID" placeholder="Ej. HEAA-ITP"
-                      value={formData.collectionID} onChange={e => handleInputChange('collectionID', e.target.value)} />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <CollectionCard
+              collectionCode={formData.collectionCode}
+              collectionID={formData.collectionID}
+              onChange={(code, id) => {
+                handleInputChange('collectionCode', code)
+                handleInputChange('collectionID', id)
+              }}
+              plantillas={plantillas}
+              plantillaMenuOpen={plantillaMenu === 'coleccion'}
+              onTogglePlantillaMenu={() => setPlantillaMenu(p => p === 'coleccion' ? null : 'coleccion')}
+              onApplyPlantilla={applyPlantilla}
+              onNewPlantilla={() => openNewPlantilla('coleccion')}
+              onEditPlantilla={openEditPlantilla}
+              onDeletePlantilla={deletePlantilla}
+              defaultPlantillaId={plantillaDefaults.coleccion}
+              onSetDefaultPlantilla={id => setPlantillaDefault('coleccion', id)}
+            />
 
             {/* cols 8-10: Espécimen */}
             <Card>
@@ -1180,8 +1609,11 @@ export default function NuevaPlantaPage() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="recordedBy">Registrado por *</Label>
-                    <Input id="recordedBy" placeholder="Ej. Andrés Orejuela / Guerly León" required
-                      value={formData.recordedBy} onChange={e => handleInputChange('recordedBy', e.target.value)} />
+                    <RecordedByInput
+                      value={formData.recordedBy}
+                      onChange={v => handleInputChange('recordedBy', v)}
+                    />
+                    <p className="text-xs text-muted-foreground">Busca un usuario existente o escribe un nombre nuevo</p>
                   </div>
                 </div>
               </CardContent>
@@ -1329,132 +1761,89 @@ export default function NuevaPlantaPage() {
                     onNew={() => openNewPlantilla('ubicacion')}
                     onEdit={openEditPlantilla}
                     onDelete={deletePlantilla}
+                    defaultId={plantillaDefaults.ubicacion}
+                    onSetDefault={id => setPlantillaDefault('ubicacion', id)}
                   />
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
 
-                {/* cols 21-22: country, stateProvince — selects cascados */}
-                {(() => {
-                  const PAISES = [
-                    'Colombia','Venezuela','Ecuador','Perú','Brasil','Bolivia','Argentina','Chile',
-                    'Paraguay','Uruguay','México','Guatemala','Honduras','El Salvador','Nicaragua',
-                    'Costa Rica','Panamá','Cuba','España','Estados Unidos','Otro',
-                  ]
-                  const DEPARTAMENTOS: Record<string, string[]> = {
-                    Colombia: [
-                      'Amazonas','Antioquia','Arauca','Atlántico','Bolívar','Boyacá','Caldas',
-                      'Caquetá','Casanare','Cauca','Cesar','Chocó','Córdoba','Cundinamarca',
-                      'Guainía','Guaviare','Huila','La Guajira','Magdalena','Meta','Nariño',
-                      'Norte de Santander','Putumayo','Quindío','Risaralda',
-                      'San Andrés y Providencia','Santander','Sucre','Tolima',
-                      'Valle del Cauca','Vaupés','Vichada','Bogotá D.C.',
-                    ],
-                  }
-                  const MUNICIPIOS: Record<string, string[]> = {
-                    Amazonas: ['Leticia','Puerto Nariño','El Encanto','La Chorrera','La Pedrera','La Victoria','Mirití-Paraná','Puerto Alegría','Puerto Arica','Puerto Santander','Tarapacá'],
-                    Antioquia: ['Medellín','Abejorral','Abriaquí','Alejandría','Amagá','Amalfi','Andes','Angelópolis','Angostura','Anorí','Anzá','Apartadó','Arboletes','Argelia','Armenia','Barbosa','Belmira','Bello','Betania','Betulia','Briceño','Buriticá','Cáceres','Caicedo','Caldas','Campamento','Cañasgordas','Caracolí','Caramanta','Carepa','Carolina','Caucasia','Chigorodó','Cisneros','Cocorná','Concepción','Concordia','Copacabana','Dabeiba','Donmatías','Ebéjico','El Bagre','El Carmen de Viboral','El Santuario','Entrerríos','Envigado','Fredonia','Frontino','Giraldo','Girardota','Gómez Plata','Granada','Guadalupe','Guarne','Guatapé','Heliconia','Hispania','Itagüí','Ituango','Jardín','Jericó','La Ceja','La Estrella','La Pintada','La Unión','Liborina','Maceo','Marinilla','Montebello','Murindó','Mutatá','Nariño','Necoclí','Nechí','Olaya','Peñol','Peque','Pueblorrico','Puerto Berrío','Puerto Nare','Puerto Triunfo','Remedios','Retiro','Rionegro','Sabanalarga','Sabaneta','Salgar','San Andrés de Cuerquia','San Carlos','San Francisco','San Jerónimo','San José de la Montaña','San Juan de Urabá','San Luis','San Pedro de los Milagros','San Pedro de Urabá','San Rafael','San Roque','San Vicente Ferrer','Santa Bárbara','Santa Rosa de Osos','Santo Domingo','Segovia','Sonsón','Sopetrán','Støfregard','Tarazá','Tarso','Titiribí','Toledo','Turbo','Uramita','Urrao','Valdivia','Valparaíso','Vegachí','Venecia','Vigía del Fuerte','Yalí','Yarumal','Yolombó','Yondó','Zaragoza'],
-                    Arauca: ['Arauca','Arauquita','Cravo Norte','Fortul','Puerto Rondón','Saravena','Tame'],
-                    Atlántico: ['Barranquilla','Baranoa','Campo de la Cruz','Candelaria','Galapa','Juan de Acosta','Luruaco','Malambo','Manatí','Palmar de Varela','Piojó','Polonuevo','Ponedera','Puerto Colombia','Repelón','Sabanagrande','Sabanalarga','Santa Lucía','Santo Tomás','Soledad','Suan','Tubará','Usiacurí'],
-                    Bolívar: ['Cartagena','Achí','Altos del Rosario','Arenal','Arjona','Arroyohondo','Barranco de Loba','Calamar','Cantagallo','Cicuco','Clemencia','Córdoba','El Carmen de Bolívar','El Guamo','El Peñón','Hatillo de Loba','Magangué','Mahates','Margarita','María La Baja','Mompós','Montecristo','Morales','Norosí','Pinillos','Regidor','Río Viejo','San Cristóbal','San Estanislao','San Fernando','San Jacinto','San Jacinto del Cauca','San Juan Nepomuceno','San Martín de Loba','San Pablo','Santa Catalina','Santa Rosa','Santa Rosa del Sur','Simití','Soplaviento','Talaigua Nuevo','Tiquisio','Turbaco','Turbaná','Villanueva','Zambrano'],
-                    Boyacá: ['Tunja','Almeida','Aquitania','Arcabuco','Belén','Berbeo','Betéitiva','Boavita','Boyacá','Briceño','Buenavista','Busbanzá','Caldas','Campohermoso','Cerinza','Chinavita','Chiquinquirá','Chíquiza','Chiscas','Chita','Chitaraque','Chivatá','Ciénega','Cómbita','Coper','Corrales','Covarachía','Cubará','Cucaita','Cuítiva','Duitama','El Cocuy','El Espino','Firavitoba','Floresta','Gachantivá','Gameza','Garagoa','Guacamayas','Guateque','Guayatá','Güicán','Iza','Jenesano','Jericó','La Capilla','La Uvita','La Victoria','Labranzagrande','Macanal','Maripí','Miraflores','Mongua','Monguí','Moniquirá','Motavita','Muzo','Nobsa','Nuevo Colón','Oicatá','Otanche','Pachavita','Páez','Paipa','Pajarito','Panqueba','Pauna','Paya','Paz de Río','Pesca','Pisba','Puerto Boyacá','Quípama','Ramiriquí','Ráquira','Rondón','Saboyá','Sáchica','Samacá','San Eduardo','San José de Pare','San Luis de Gaceno','San Mateo','San Miguel de Sema','San Pablo de Borbur','Santana','Santa María','Santa Rosa de Viterbo','Santa Sofía','Sativanorte','Sativasur','Siachoque','Soatá','Socotá','Socha','Sogamoso','Somondoco','Sora','Soracá','Sotaquirá','Susacón','Sutamarchán','Sutatenza','Tasco','Tenza','Tibaná','Tibasosa','Tinjacá','Tipacoque','Toca','Togüí','Tópaga','Tota','Turmequé','Tuta','Tutazá','Umbita','Ventaquemada','Villa de Leyva','Viracachá','Zetaquira'],
-                    Caldas: ['Manizales','Aguadas','Anserma','Aranzazu','Belalcázar','Chinchiná','Filadelfia','La Dorada','La Merced','Manzanares','Marmato','Marquetalia','Marulanda','Neira','Norcasia','Pácora','Palestina','Pensilvania','Riosucio','Robledo','Salamina','Samaná','San José','Supía','Victoria','Villamaría','Viterbo'],
-                    Caquetá: ['Florencia','Albania','Belén de los Andaquíes','Cartagena del Chairá','Curillo','El Doncello','El Paujil','La Montañita','Milán','Morelia','Puerto Rico','San José del Fragua','San Vicente del Caguán','Solano','Solita','Valparaíso'],
-                    Casanare: ['Yopal','Aguazul','Chámeza','Hato Corozal','La Salina','Maní','Monterrey','Nunchía','Orocué','Paz de Ariporo','Pore','Recetor','Sabanalarga','Sácama','San Luis de Palenque','Támara','Tauramena','Trinidad','Villanueva'],
-                    Cauca: ['Popayán','Almaguer','Argelia','Balboa','Bolívar','Buenos Aires','Cajibío','Caldono','Caloto','Corinto','El Tambo','Florencia','Guachené','Guapi','Inzá','Jambaló','La Sierra','La Vega','López de Micay','Mercaderes','Miranda','Morales','Padilla','Páez','Patía','Piamonte','Piendamó','Puerto Tejada','Puracé','Rosas','San Sebastián','Santa Rosa','Santander de Quilichao','Silvia','Sotara','Suárez','Sucre','Timbío','Timbiquí','Toribío','Totoró','Villa Rica'],
-                    Cesar: ['Valledupar','Aguachica','Agustín Codazzi','Astrea','Becerril','Bosconia','Chimichagua','Chiriguaná','Curumaní','El Copey','El Paso','Gamarra','González','La Gloria','La Jagua de Ibirico','La Paz','Manaure','Pailitas','Pelaya','Pueblo Bello','Río de Oro','San Alberto','San Diego','San Martín','Tamalameque'],
-                    Chocó: ['Quibdó','Acandí','Alto Baudó','Atrato','Bagadó','Bahía Solano','Bajo Baudó','Bojayá','Carmen del Darién','Cértegui','Condoto','El Cantón del San Pablo','El Carmen de Atrato','El Litoral del San Juan','Istmina','Juradó','Lloró','Medio Atrato','Medio Baudó','Medio San Juan','Nóvita','Nuquí','Río Iro','Río Quito','Riosucio','San José del Palmar','Sipí','Tadó','Unguía','Unión Panamericana'],
-                    Córdoba: ['Montería','Ayapel','Buenavista','Canalete','Cereté','Chimá','Chinú','Ciénaga de Oro','Cotorra','La Apartada','Lorica','Los Córdobas','Momil','Montelíbano','Moñitos','Planeta Rica','Pueblo Nuevo','Puerto Escondido','Puerto Libertador','Purísima','Sahagún','San Andrés de Sotavento','San Antero','San Bernardo del Viento','San Carlos','San José de Uré','San Pelayo','Santa Cruz de Lorica','Tierralta','Tuchín','Valencia'],
-                    Cundinamarca: ['Bogotá D.C.','Agua de Dios','Albán','Anapoima','Anolaima','Apulo','Arbeláez','Beltrán','Bituima','Bojacá','Cabrera','Cachipay','Cajicá','Caparrapí','Cáqueza','Carmen de Carupa','Chaguaní','Chía','Chipaque','Choachí','Chocontá','Cogua','Cota','Cucunubá','El Colegio','El Peñón','El Rosal','Facatativá','Fómeque','Fosca','Funza','Fúquene','Fusagasugá','Gachalá','Gachancipá','Gachetá','Gama','Girardot','Granada','Guachetá','Guaduas','Guasca','Guataquí','Guatavita','Guayabal de Síquima','Guayabetal','Gutiérrez','Jerusalén','Junín','La Calera','La Mesa','La Palma','La Peña','La Vega','Lenguazaque','Machetá','Madrid','Manta','Medina','Mosquera','Nariño','Nemocón','Nilo','Nimaima','Nocaima','Ospina Pérez','Pacho','Paime','Pandi','Paratebueno','Pasca','Puerto Salgar','Pulí','Quebradanegra','Quetame','Quipile','Ricaurte','San Antonio del Tequendama','San Bernardo','San Cayetano','San Francisco','San Juan de Río Seco','Sasaima','Sesquilé','Sibaté','Silvania','Simijaca','Soacha','Sopó','Subachoque','Suesca','Supatá','Susa','Sutatausa','Tabio','Tausa','Tena','Tibacuy','Tibirita','Tocaima','Tocancipá','Topaipí','Ubalá','Ubaque','Ubaté','Une','Útica','Venecia','Vergara','Vianí','Villagómez','Villapinzón','Villeta','Viotá','Yacopí','Zipacón','Zipaquirá'],
-                    Guainía: ['Inírida','Barranco Minas','Cacahual','La Guadalupe','Mapiripana','Morichal','Pana Pana','Puerto Colombia','San Felipe'],
-                    Guaviare: ['San José del Guaviare','Calamar','El Retorno','Miraflores'],
-                    Huila: ['Neiva','Acevedo','Agrado','Aipe','Algeciras','Altamira','Baraya','Campoalegre','Colombia','Elías','Garzón','Gigante','Guadalupe','Hobo','Iquira','Isnos','La Argentina','La Plata','Nataga','Oporapa','Paicol','Palermo','Palestina','Pital','Pitalito','Rivera','Saladoblanco','San Agustín','Santa María','Suaza','Tarqui','Tello','Teruel','Tesalia','Timaná','Villavieja','Yaguará'],
-                    'La Guajira': ['Riohacha','Albania','Barrancas','Dibulla','Distracción','El Molino','Fonseca','Hatonuevo','La Jagua del Pilar','Maicao','Manaure','San Juan del Cesar','Uribia','Urumita','Villanueva'],
-                    Magdalena: ['Santa Marta','Algarrobo','Aracataca','Ariguaní','Cerro de San Antonio','Chivolo','Ciénaga','Concordia','El Banco','El Piñón','El Retén','Fundación','Guamal','Nueva Granada','Pedraza','Pijiño del Carmen','Pivijay','Plato','Puebloviejo','Remolino','Sabanas de San Ángel','Salamina','San Sebastián de Buenavista','San Zenón','Santa Ana','Santa Bárbara de Pinto','Sitionuevo','Tenerife','Zapayán','Zona Bananera'],
-                    Meta: ['Villavicencio','Acacías','Barranca de Upía','Cabuyaro','Castilla la Nueva','Cubarral','Cumaral','El Calvario','El Castillo','El Dorado','Fuente de Oro','Granada','Guamal','La Macarena','La Uribe','Lejanías','Mapiripán','Mesetas','Puerto Concordia','Puerto Gaitán','Puerto Lleras','Puerto López','Puerto Rico','Restrepo','San Carlos de Guaroa','San Juan de Arama','San Juanito','San Martín','Vistahermosa'],
-                    Nariño: ['Pasto','Albán','Aldana','Ancuyá','Arboleda','Barbacoas','Belén','Buesaco','Chachagüí','Colón','Consacá','Contadero','Córdoba','Cuaspud','Cumbal','Cumbitara','El Charco','El Peñol','El Rosario','El Tablón de Gómez','El Tambo','Francisco Pizarro','Funes','Guachucal','Guaitarilla','Gualmatán','Iles','Imués','Ipiales','La Cruz','La Florida','La Llanada','La Tola','La Unión','Leiva','Linares','Los Andes','Magüí','Mallama','Mosquera','Nariño','Olaya Herrera','Ospina','Policarpa','Potosí','Providencia','Puerres','Pupiales','Ricaurte','Roberto Payán','Samaniego','San Bernardo','San Lorenzo','San Pablo','San Pedro de Cartago','Sandoná','Santa Bárbara','Santacruz','Sapuyes','Taminango','Tangua','Tumaco','Túquerres','Yacuanquer'],
-                    'Norte de Santander': ['Cúcuta','Ábrego','Arboledas','Bochalema','Bucarasica','Cáchira','Cácota','Chinácota','Chitagá','Convención','Cucutilla','Durania','El Carmen','El Tarra','El Zulia','Gramalote','Hacarí','Herrán','Labateca','La Esperanza','La Playa','Los Patios','Lourdes','Mutiscua','Ocaña','Pamplona','Pamplonita','Puerto Santander','Ragonvalia','Salazar','San Calixto','San Cayetano','Santiago','Sardinata','Silos','Teorama','Tibú','Toledo','Villa Caro','Villa del Rosario'],
-                    Putumayo: ['Mocoa','Colón','Orito','Puerto Asís','Puerto Caicedo','Puerto Guzmán','Puerto Leguízamo','San Francisco','San Miguel','Santiago','Sibundoy','Valle del Guamuez','Villagarzón'],
-                    Quindío: ['Armenia','Buenavista','Calarcá','Circasia','Córdoba','Filandia','Génova','La Tebaida','Montenegro','Pijao','Quimbaya','Salento'],
-                    Risaralda: ['Pereira','Apía','Balboa','Belén de Umbría','Dosquebradas','Guática','La Celia','La Virginia','Marsella','Mistrató','Pueblo Rico','Quinchía','Santa Rosa de Cabal','Santuario'],
-                    'San Andrés y Providencia': ['San Andrés','Providencia'],
-                    Santander: ['Bucaramanga','Aguada','Albania','Aratoca','Barbosa','Barichara','Barrancabermeja','Betulia','Bolívar','Cabrera','California','Capitanejo','Carcasí','Cepitá','Cerrito','Charalá','Charta','Chima','Chipatá','Cimitarra','Confines','Contratación','Coromoro','Curití','El Carmen de Chucurí','El Guacamayo','El Peñón','El Playón','Encino','Enciso','Floridablanca','Galán','Gámbita','Girón','Guaca','Guadalupe','Guapotá','Guavatá','Güepsa','Hato','Jesús María','Jordán','La Belleza','La Paz','Landázuri','Lebrija','Los Santos','Macaravita','Málaga','Matanza','Mogotes','Molagavita','Ocamonte','Oiba','Onzaga','Palmar','Palmas del Socorro','Páramo','Piedecuesta','Pinchote','Puente Nacional','Puerto Parra','Puerto Wilches','Rionegro','Sabana de Torres','San Andrés','San Benito','San Gil','San Joaquín','San José de Miranda','San Miguel','San Vicente de Chucurí','Santa Bárbara','Santa Helena del Opón','Simacota','Socorro','Suaita','Sucre','Suratá','Tona','Valle de San José','Vélez','Vetas','Villanueva','Zapatoca'],
-                    Sucre: ['Sincelejo','Buenavista','Caimito','Chalán','Colosó','Corozal','Coveñas','El Roble','Galeras','Guaranda','La Unión','Los Palmitos','Majagual','Morroa','Ovejas','Palmito','Sampués','San Benito Abad','San Juan de Betulia','San Marcos','San Onofre','San Pedro','Santiago de Tolú','Sincé','Sucre','Tolú Viejo'],
-                    Tolima: ['Ibagué','Alpujarra','Alvarado','Ambalema','Anzoátegui','Armero','Ataco','Cajamarca','Carmen de Apicalá','Casabianca','Chaparral','Coello','Coyaima','Cunday','Dolores','Espinal','Falan','Flandes','Fresno','Guamo','Herveo','Honda','Icononzo','Lérida','Líbano','Mariquita','Melgar','Murillo','Natagaima','Ortega','Palocabildo','Piedras','Planadas','Prado','Purificación','Rioblanco','Roncesvalles','Rovira','Saldaña','San Antonio','San Luis','Santa Isabel','Suárez','Valle de San Juan','Venadillo','Villahermosa','Villarrica'],
-                    'Valle del Cauca': ['Cali','Alcalá','Andalucía','Ansermanuevo','Argelia','Bolívar','Buenaventura','Buga','Bugalagrande','Caicedonia','Calima','Candelaria','Cartago','Dagua','El Águila','El Cairo','El Cerrito','El Dovio','El Darién','Florida','Ginebra','Guacarí','Jamundí','La Cumbre','La Unión','La Victoria','Obando','Palmira','Pradera','Restrepo','Riofrío','Roldanillo','San Pedro','Sevilla','Toro','Trujillo','Tuluá','Ulloa','Versalles','Vijes','Yotoco','Yumbo','Zarzal'],
-                    Vaupés: ['Mitú','Carurú','Pacoa','Papunaua','Taraira','Yavaraté'],
-                    Vichada: ['Puerto Carreño','Cumaribo','La Primavera','Santa Rosalía'],
-                    'Bogotá D.C.': ['Bogotá D.C.'],
-                  }
+                {/* cols 21-22: country, stateProvince, county — selects cascados via API */}
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="country">País</Label>
+                    <Select
+                      value={formData.country}
+                      onValueChange={v => {
+                        handleInputChange('country', v)
+                        handleInputChange('stateProvince', '')
+                        handleInputChange('county', '')
+                      }}
+                    >
+                      <SelectTrigger id="country">
+                        <SelectValue placeholder={geoCountries.length ? 'Selecciona un país' : 'Cargando países…'} />
+                      </SelectTrigger>
+                      <SelectContent className="max-h-72">
+                        {geoCountries.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-                  const deptos = DEPARTAMENTOS[formData.country] || []
-                  const municipios = MUNICIPIOS[formData.stateProvince] || []
-
-                  return (
-                    <>
-                      <div className="grid gap-4 sm:grid-cols-2">
-                        <div className="space-y-2">
-                          <Label htmlFor="country">País</Label>
-                          <Select
-                            value={formData.country}
-                            onValueChange={v => {
-                              handleInputChange('country', v)
-                              handleInputChange('stateProvince', '')
-                              handleInputChange('county', '')
-                            }}
-                          >
-                            <SelectTrigger id="country"><SelectValue placeholder="Selecciona un país" /></SelectTrigger>
-                            <SelectContent>
-                              {PAISES.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="stateProvince">Departamento / Región</Label>
-                          {deptos.length > 0 ? (
-                            <Select
-                              value={formData.stateProvince}
-                              onValueChange={v => {
-                                handleInputChange('stateProvince', v)
-                                handleInputChange('county', '')
-                              }}
-                            >
-                              <SelectTrigger id="stateProvince"><SelectValue placeholder="Selecciona un departamento" /></SelectTrigger>
-                              <SelectContent className="max-h-72">
-                                {deptos.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
-                              </SelectContent>
-                            </Select>
-                          ) : (
-                            <Input id="stateProvince" placeholder="Ej. Putumayo"
-                              value={formData.stateProvince} onChange={e => handleInputChange('stateProvince', e.target.value)} />
-                          )}
-                        </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="stateProvince">Departamento / Región</Label>
+                    {geoStates.length > 0 ? (
+                      <Select
+                        value={formData.stateProvince}
+                        onValueChange={v => {
+                          handleInputChange('stateProvince', v)
+                          handleInputChange('county', '')
+                        }}
+                      >
+                        <SelectTrigger id="stateProvince"><SelectValue placeholder="Selecciona un departamento" /></SelectTrigger>
+                        <SelectContent className="max-h-72">
+                          {geoStates.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <div className="relative">
+                        <Input id="stateProvince"
+                          placeholder={geoLoadingStates ? 'Cargando departamentos…' : formData.country ? 'Escribe el departamento' : 'Selecciona un país primero'}
+                          value={formData.stateProvince}
+                          disabled={geoLoadingStates}
+                          onChange={e => handleInputChange('stateProvince', e.target.value)} />
+                        {geoLoadingStates && <Loader2 className="absolute right-2 top-2.5 h-4 w-4 animate-spin text-muted-foreground" />}
                       </div>
+                    )}
+                  </div>
+                </div>
 
-                      <div className="grid gap-4 sm:grid-cols-2">
-                        <div className="space-y-2">
-                          <Label htmlFor="county">Municipio</Label>
-                          {municipios.length > 0 ? (
-                            <Select value={formData.county} onValueChange={v => handleInputChange('county', v)}>
-                              <SelectTrigger id="county"><SelectValue placeholder="Selecciona un municipio" /></SelectTrigger>
-                              <SelectContent className="max-h-72">
-                                {municipios.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
-                              </SelectContent>
-                            </Select>
-                          ) : (
-                            <Input id="county" placeholder="Ej. Mocoa"
-                              value={formData.county} onChange={e => handleInputChange('county', e.target.value)} />
-                          )}
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="municipality">Centro poblado / Vereda</Label>
-                          <Input id="municipality" placeholder="Ej. Las Mesas"
-                            value={formData.municipality} onChange={e => handleInputChange('municipality', e.target.value)} />
-                        </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="county">Municipio</Label>
+                    {geoCities.length > 0 ? (
+                      <Select value={formData.county} onValueChange={v => handleInputChange('county', v)}>
+                        <SelectTrigger id="county"><SelectValue placeholder="Selecciona un municipio" /></SelectTrigger>
+                        <SelectContent className="max-h-72">
+                          {geoCities.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <div className="relative">
+                        <Input id="county"
+                          placeholder={geoLoadingCities ? 'Cargando municipios…' : formData.stateProvince ? 'Escribe el municipio' : 'Selecciona un departamento primero'}
+                          value={formData.county}
+                          disabled={geoLoadingCities}
+                          onChange={e => handleInputChange('county', e.target.value)} />
+                        {geoLoadingCities && <Loader2 className="absolute right-2 top-2.5 h-4 w-4 animate-spin text-muted-foreground" />}
                       </div>
-                    </>
-                  )
-                })()}
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="municipality">Centro poblado / Vereda</Label>
+                    <Input id="municipality" placeholder="Ej. Las Mesas"
+                      value={formData.municipality} onChange={e => handleInputChange('municipality', e.target.value)} />
+                  </div>
+                </div>
 
                 {/* col 25: locality */}
                 <div className="space-y-2">
@@ -1478,472 +1867,4 @@ export default function NuevaPlantaPage() {
                   <div className="flex items-center justify-between">
                     <Label>Coordenadas (decimal)</Label>
                     <Button type="button" variant="outline" size="sm" onClick={fetchGPS} disabled={gpsLoading}
-                      title="Obtener coordenadas automáticamente desde tu dispositivo">
-                      {gpsLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <MapPin className="mr-2 h-4 w-4" />}
-                      {gpsLoading ? 'Obteniendo...' : 'Usar mi ubicación'}
-                    </Button>
-                  </div>
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="space-y-1">
-                      <Label htmlFor="decimalLatitude" className="text-xs text-muted-foreground">Latitud decimal</Label>
-                      <Input id="decimalLatitude" placeholder="Ej. 1.0934 (neg = Sur)"
-                        value={formData.decimalLatitude} onChange={e => handleInputChange('decimalLatitude', e.target.value)} />
-                    </div>
-                    <div className="space-y-1">
-                      <Label htmlFor="decimalLongitude" className="text-xs text-muted-foreground">Longitud decimal</Label>
-                      <Input id="decimalLongitude" placeholder="Ej. -76.7333 (neg = Oeste)"
-                        value={formData.decimalLongitude} onChange={e => handleInputChange('decimalLongitude', e.target.value)} />
-                    </div>
-                  </div>
-                </div>
-
-                {/* col 31: geodeticDatum */}
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="geodetic">Datum geodésico</Label>
-                    <Input id="geodetic" placeholder="Ej. WGS84"
-                      value={formData.geodetic} onChange={e => handleInputChange('geodetic', e.target.value)} />
-                  </div>
-                </div>
-
-                {/* Vista previa en mapa */}
-                {formData.decimalLatitude && formData.decimalLongitude && (
-                  <div className="flex items-center gap-3 p-3 bg-muted/40 rounded-lg border">
-                    <MapPin className="h-4 w-4 text-primary shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium">Coordenadas registradas</p>
-                      <p className="text-xs text-muted-foreground">
-                        {formData.decimalLatitude}, {formData.decimalLongitude}
-                        {formData.county && ` · ${formData.county}`}
-                        {formData.stateProvince && `, ${formData.stateProvince}`}
-                      </p>
-                    </div>
-                    <a
-                      href={`/plantas?lat=${formData.decimalLatitude}&lng=${formData.decimalLongitude}&zoom=14`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-xs text-primary hover:underline shrink-0"
-                    >
-                      <ExternalLink className="h-3 w-3" />
-                      Ver en mapa
-                    </a>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            <SectionButtons sectionName="Ubicación" nextTab="taxonomia" />
-          </TabsContent>
-
-          {/* ── TAB 4: TAXONOMÍA (cols 32-50) ───────────────────────────── */}
-          <TabsContent value="taxonomia" className="space-y-6 mt-6">
-
-            {/* cols 32-35: Determinación e identificación */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Determinación e Identificación</CardTitle>
-                <CardDescription>Datos de quien identificó el espécimen y confirmó la determinación</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="identifiedBy">Identificado por</Label>
-                    <Input id="identifiedBy" placeholder="Ej. Andrés Orejuela"
-                      value={formData.identifiedBy} onChange={e => handleInputChange('identifiedBy', e.target.value)} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="dateIdentified">Fecha de identificación</Label>
-                    <Input id="dateIdentified" type="date"
-                      value={formData.dateIdentified} onChange={e => handleInputChange('dateIdentified', e.target.value)} />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="project">Proyecto</Label>
-                  <Input id="project"
-                    placeholder="Ej. Diversidad de la familia Solanaceae a lo largo del gradiente altitudinal Mocoa - San Francisco"
-                    value={formData.project} onChange={e => handleInputChange('project', e.target.value)} />
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* cols 36-50: Taxonomía */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Información Taxonómica</CardTitle>
-                <CardDescription>Clasificación taxonómica del espécimen</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-
-                {/* cols 36-37: scientificName, scientificNameAuthorship */}
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="scientificName">Nombre científico *</Label>
-                    <div className="flex gap-2">
-                      <Input id="scientificName" placeholder="Ej. Solanum abiaguense" required
-                        value={formData.scientificName} onChange={e => handleInputChange('scientificName', e.target.value)} />
-                      <Button type="button" variant="outline" size="sm" onClick={fetchGbifTaxonomy}
-                        disabled={gbifLoading || !formData.scientificName.trim()}
-                        title="Consultar GBIF y rellenar familia, orden, clase, filo y autoría automáticamente">
-                        {gbifLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                      </Button>
-                    </div>
-                    <p className="text-xs text-muted-foreground">Escribe el nombre y presiona ✨ para autocompletar taxonomía desde GBIF</p>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="scientificNameAuthorship">Autoría del nombre científico</Label>
-                    <Input id="scientificNameAuthorship" placeholder="Se rellena automáticamente con GBIF"
-                      value={formData.scientificNameAuthorship} onChange={e => handleInputChange('scientificNameAuthorship', e.target.value)} />
-                  </div>
-                </div>
-
-                {/* cols 38-40: kingdom, phylum, class */}
-                <div className="grid gap-4 sm:grid-cols-3">
-                  <div className="space-y-2">
-                    <Label htmlFor="kingdom">Reino</Label>
-                    <Input id="kingdom" placeholder="Ej. Plantae"
-                      value={formData.kingdom} onChange={e => handleInputChange('kingdom', e.target.value)} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="phylum">Filo</Label>
-                    <Input id="phylum" placeholder="Ej. Magnoliophyta"
-                      value={formData.phylum} onChange={e => handleInputChange('phylum', e.target.value)} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="class">Clase</Label>
-                    <Input id="class" placeholder="Ej. Equisetopsida"
-                      value={formData.class} onChange={e => handleInputChange('class', e.target.value)} />
-                  </div>
-                </div>
-
-                {/* cols 41-43: order, family, subfamily */}
-                <div className="grid gap-4 sm:grid-cols-3">
-                  <div className="space-y-2">
-                    <Label htmlFor="order">Orden</Label>
-                    <Input id="order" placeholder="Se rellena con GBIF ✨"
-                      value={formData.orderName} onChange={e => handleInputChange('orderName', e.target.value)} />
-                  </div>
-                  {/* Familia con autocompletado */}
-                  <div className="space-y-2 relative">
-                    <Label htmlFor="family">Familia *</Label>
-                    <Input id="family" placeholder="Ej. Solanaceae" required autoComplete="off"
-                      value={formData.family}
-                      onChange={e => handleAutocomplete('family', e.target.value, 'family')}
-                      onBlur={() => setTimeout(() => setAcOpen(p => ({ ...p, family: false })), 150)} />
-                    {acOpen['family'] && acSuggestions['family']?.length > 0 && (
-                      <div className="absolute z-50 w-full rounded-md border bg-background shadow-lg top-[64px]">
-                        {acSuggestions['family'].map(s => (
-                          <button key={s.id} type="button" onMouseDown={() => pickSuggestion('family', s.value)}
-                            className="w-full px-3 py-2 text-left text-sm hover:bg-muted border-b last:border-0">{s.label}</button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="subfamily">Subfamilia</Label>
-                    <Input id="subfamily" placeholder="Subfamilia (opcional)"
-                      value={formData.subfamily} onChange={e => handleInputChange('subfamily', e.target.value)} />
-                  </div>
-                </div>
-
-                {/* cols 44-46: genus, subgenus, specificEpithet */}
-                <div className="grid gap-4 sm:grid-cols-3">
-                  {/* Género con autocompletado */}
-                  <div className="space-y-2 relative">
-                    <Label htmlFor="genus">Género *</Label>
-                    <Input id="genus" placeholder="Ej. Solanum" required autoComplete="off"
-                      value={formData.genus}
-                      onChange={e => handleAutocomplete('genus', e.target.value, 'scientific')}
-                      onBlur={() => setTimeout(() => setAcOpen(p => ({ ...p, genus: false })), 150)} />
-                    {acOpen['genus'] && acSuggestions['genus']?.length > 0 && (
-                      <div className="absolute z-50 w-full rounded-md border bg-background shadow-lg top-[64px]">
-                        {acSuggestions['genus'].map(s => (
-                          <button key={s.id} type="button" onMouseDown={() => pickSuggestion('genus', s.value)}
-                            className="w-full px-3 py-2 text-left text-sm hover:bg-muted border-b last:border-0">{s.label}</button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="subgenus">Subgénero</Label>
-                    <Input id="subgenus" placeholder="Subgénero (opcional)"
-                      value={formData.subgenus} onChange={e => handleInputChange('subgenus', e.target.value)} />
-                  </div>
-                  {/* Epíteto con autocompletado */}
-                  <div className="space-y-2 relative">
-                    <Label htmlFor="specificEpithet">Epíteto específico *</Label>
-                    <Input id="specificEpithet" placeholder="Ej. abiaguense" required autoComplete="off"
-                      value={formData.specificEpithet}
-                      onChange={e => handleAutocomplete('specificEpithet', e.target.value, 'scientific')}
-                      onBlur={() => setTimeout(() => setAcOpen(p => ({ ...p, specificEpithet: false })), 150)} />
-                    {acOpen['specificEpithet'] && acSuggestions['specificEpithet']?.length > 0 && (
-                      <div className="absolute z-50 w-full rounded-md border bg-background shadow-lg top-[64px]">
-                        {acSuggestions['specificEpithet'].map(s => (
-                          <button key={s.id} type="button" onMouseDown={() => pickSuggestion('specificEpithet', s.value)}
-                            className="w-full px-3 py-2 text-left text-sm hover:bg-muted border-b last:border-0">{s.label}</button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* cols 47-50: infraspecificEpithet, taxonRank, vernacularName, taxonRemarks */}
-                <div className="grid gap-4 sm:grid-cols-3">
-                  <div className="space-y-2">
-                    <Label htmlFor="infraspecificEpithet">Epíteto infraespecífico</Label>
-                    <Input id="infraspecificEpithet" placeholder="Opcional"
-                      value={formData.infraspecificEpithet} onChange={e => handleInputChange('infraspecificEpithet', e.target.value)} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="taxonRank">Categoría del taxón</Label>
-                    <Select value={formData.taxonRank} onValueChange={v => handleInputChange('taxonRank', v)}>
-                      <SelectTrigger id="taxonRank"><SelectValue placeholder="Selecciona una categoría" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="species">Especie</SelectItem>
-                        <SelectItem value="subspecies">Subespecie</SelectItem>
-                        <SelectItem value="variety">Variedad</SelectItem>
-                        <SelectItem value="form">Forma</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="vernacularName">Nombre común</Label>
-                    <Input id="vernacularName" placeholder="Nombre común (opcional)"
-                      value={formData.vernacularName} onChange={e => handleInputChange('vernacularName', e.target.value)} />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="taxonRemarks">Comentarios del taxón</Label>
-                  <Textarea id="taxonRemarks" rows={3} placeholder="Comentarios adicionales sobre el taxón..."
-                    value={formData.taxonRemarks} onChange={e => handleInputChange('taxonRemarks', e.target.value)} />
-                </div>
-              </CardContent>
-            </Card>
-
-            <SectionButtons sectionName="Taxonomía" nextTab="caracteristicas" />
-          </TabsContent>
-
-          {/* ── TAB 5: CARACTERÍSTICAS (morfológicas extra) ──────────────── */}
-          <TabsContent value="caracteristicas" className="space-y-6 mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Características del Espécimen</CardTitle>
-                <CardDescription>Descripción morfológica y ecológica detallada</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="description">Descripción general</Label>
-                  <Textarea id="description" rows={4} placeholder="Descripción detallada del espécimen..."
-                    value={formData.description} onChange={e => handleInputChange('description', e.target.value)} />
-                </div>
-
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="plantHeight">Altura de la planta (m)</Label>
-                    <Input id="plantHeight" type="number" step="0.1" placeholder="Ej. 5.0"
-                      value={formData.plantHeight} onChange={e => handleInputChange('plantHeight', e.target.value)} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="plantHabit">Hábito de crecimiento</Label>
-                    <Select value={formData.plantHabit} onValueChange={v => handleInputChange('plantHabit', v)}>
-                      <SelectTrigger id="plantHabit"><SelectValue placeholder="Selecciona un hábito" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="arbol">Árbol</SelectItem>
-                        <SelectItem value="arbusto">Arbusto</SelectItem>
-                        <SelectItem value="hierba">Hierba</SelectItem>
-                        <SelectItem value="trepadora">Trepadora</SelectItem>
-                        <SelectItem value="epifita">Epífita</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="flowerColor">Color de la flor</Label>
-                    <Input id="flowerColor" placeholder="Ej. Corola blanca, anteras amarillas"
-                      value={formData.flowerColor} onChange={e => handleInputChange('flowerColor', e.target.value)} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="fruitColor">Color del fruto</Label>
-                    <Input id="fruitColor" placeholder="Color del fruto (si aplica)"
-                      value={formData.fruitColor} onChange={e => handleInputChange('fruitColor', e.target.value)} />
-                  </div>
-                </div>
-
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="leafCharacteristics">Características de las hojas</Label>
-                    <Textarea id="leafCharacteristics" rows={3} placeholder="Descripción de las hojas..."
-                      value={formData.leafCharacteristics} onChange={e => handleInputChange('leafCharacteristics', e.target.value)} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="uses">Usos</Label>
-                    <Textarea id="uses" rows={3} placeholder="Usos tradicionales o conocidos..."
-                      value={formData.uses} onChange={e => handleInputChange('uses', e.target.value)} />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="additionalRemarks">Observaciones adicionales</Label>
-                  <Textarea id="additionalRemarks" rows={3} placeholder="Cualquier otra información relevante..."
-                    value={formData.additionalRemarks} onChange={e => handleInputChange('additionalRemarks', e.target.value)} />
-                </div>
-              </CardContent>
-            </Card>
-
-            <SectionButtons sectionName="Características" nextTab="imagenes" />
-          </TabsContent>
-
-          {/* ── TAB 6: IMÁGENES (col 51 + multimedia) ───────────────────── */}
-          <TabsContent value="imagenes" className="space-y-6 mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Imágenes del Espécimen</CardTitle>
-                <CardDescription>Fotografías y documentación visual (se suben a Cloudinary)</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid gap-5">
-                  <div
-                    className={`flex flex-col items-center justify-center border-2 border-dashed rounded-lg p-12 text-center transition-colors ${isDragOver ? 'border-primary bg-primary/5' : 'border-muted-foreground/25'}`}
-                    onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop}
-                  >
-                    <div className="mb-4 rounded-full bg-primary/10 p-3">
-                      <Upload className="h-6 w-6 text-primary" />
-                    </div>
-                    <h3 className="mb-1 text-lg font-semibold">Arrastra y suelta imágenes</h3>
-                    <p className="mb-4 text-sm text-muted-foreground">O haz clic para seleccionar archivos</p>
-                    <Button variant="outline" size="sm" type="button"
-                      onClick={() => document.getElementById('file-input')?.click()}>
-                      Seleccionar archivos
-                    </Button>
-                    <input id="file-input" type="file" multiple accept="image/*" onChange={handleFileSelect} className="hidden" />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
-                    {uploadedImages.map((image, index) => (
-                      <div key={index} className="relative aspect-square rounded-md border bg-muted overflow-hidden">
-                        {image.isUploading ? (
-                          <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-                            <Loader2 className="h-6 w-6 text-white animate-spin" />
-                          </div>
-                        ) : (
-                          <>
-                            <img src={image.url} alt={image.originalName} className="w-full h-full object-cover" />
-                            <Button variant="destructive" size="icon" type="button"
-                              className="absolute right-1 top-1 h-6 w-6" onClick={() => removeImage(index)}>
-                              <X className="h-4 w-4" />
-                            </Button>
-                            {image.id && !image.isUploading && !image.uploadFailed && (
-                              <div className="absolute bottom-1 right-1 bg-green-500 text-white rounded-full p-1">
-                                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                </svg>
-                              </div>
-                            )}
-                            {image.uploadFailed && !image.isUploading && (
-                              <div className="absolute bottom-1 right-1 bg-yellow-500 text-white rounded-full p-1" title="Solo vista previa local">
-                                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                                </svg>
-                              </div>
-                            )}
-                          </>
-                        )}
-                      </div>
-                    ))}
-                    <div className="flex aspect-square items-center justify-center rounded-md border border-dashed cursor-pointer hover:bg-muted/50 transition-colors"
-                      onClick={() => document.getElementById('file-input')?.click()}>
-                      <Button variant="ghost" size="icon" type="button"><Plus className="h-4 w-4" /></Button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* col 51: photoRecord */}
-                <div className="mt-6 space-y-2">
-                  <Label htmlFor="photoRecord">Fotografía en Montaje</Label>
-                  <Select value={formData.photoRecord} onValueChange={v => handleInputChange('photoRecord', v)}>
-                    <SelectTrigger id="photoRecord"><SelectValue placeholder="¿Tiene fotografía en montaje?" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="si">Sí</SelectItem>
-                      <SelectItem value="no">No</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {uploadedImages.length > 0 && (
-                  <div className="mt-4 p-4 bg-muted/30 rounded-lg">
-                    <h4 className="text-sm font-medium mb-2">Resumen de imágenes:</h4>
-                    <div className="space-y-1 text-sm text-muted-foreground">
-                      <p>📁 {uploadedImages.length} imagen(es) seleccionada(s)</p>
-                      {uploadedImages.filter(img => img.id && !img.uploadFailed).length > 0 && (
-                        <p className="text-green-600">✅ {uploadedImages.filter(img => img.id && !img.uploadFailed).length} ya subida(s) a Cloudinary</p>
-                      )}
-                      {uploadedImages.filter(img => img.isUploading).length > 0 && (
-                        <p className="text-blue-600">⏳ {uploadedImages.filter(img => img.isUploading).length} subiendo...</p>
-                      )}
-                      {uploadedImages.filter(img => img.uploadFailed || (!img.id && !img.isUploading)).length > 0 && (
-                        <p className="text-orange-600">📤 {uploadedImages.filter(img => img.uploadFailed || (!img.id && !img.isUploading)).length} se subirá(n) al guardar el espécimen</p>
-                      )}
-                    </div>
-                    <div className="mt-3 p-2 bg-blue-50 rounded text-xs text-blue-700 border border-blue-200">
-                      💡 Todas las imágenes se almacenan en Cloudinary. Solo se guarda el enlace en la base de datos.
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            <div className="flex justify-between pt-4">
-              <Button type="button" variant="outline" onClick={() => savePlantSection('Imágenes')} disabled={isSavingSection}>
-                {isSavingSection ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Guardando...</> : <><Save className="mr-2 h-4 w-4" />Guardar Sección</>}
-              </Button>
-              <div className="space-x-2">
-                {plantId && (
-                  <Button type="button" variant="outline" onClick={() => router.push(`/admin/plantas/${plantId}/editar`)}>
-                    Ir a Editar
-                  </Button>
-                )}
-                <Button type="submit" disabled={isLoading || !canPublish} className="bg-green-600 hover:bg-green-700"
-                  title={!canPublish ? 'Visita o guarda todas las secciones para habilitar' : undefined}>
-                  {isLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Finalizando...</> : 'Finalizar y Publicar'}
-                </Button>
-              </div>
-            </div>
-          </TabsContent>
-        </Tabs>
-
-        <div className="flex justify-between pt-6 border-t">
-          <div className="flex items-center space-x-4">
-            <Button type="button" variant="outline" onClick={() => router.push('/admin/plantas')}>Cancelar</Button>
-            {plantId && <div className="text-sm text-muted-foreground">✅ Borrador guardado (ID: {plantId})</div>}
-          </div>
-          <div className="flex flex-col items-end gap-1">
-            {!canPublish && (
-              <p className="text-xs text-muted-foreground">
-                {`${Math.max(savedSections.size, visitedTabs.size > 1 ? visitedTabs.size - 1 : 0)}/5 secciones — visita o guarda todas para publicar`}
-              </p>
-            )}
-            <Button type="submit" className="bg-green-600 hover:bg-green-700"
-              disabled={isLoading || !canPublish || uploadedImages.some(img => img.isUploading)}
-              title={!canPublish ? 'Visita o guarda todas las secciones para habilitar' : undefined}>
-              {isLoading ? (
-                <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Finalizando y publicando...</>
-              ) : uploadedImages.some(img => img.isUploading) ? (
-                <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Esperando imágenes...</>
-              ) : (
-                <>
-                  <Save className="mr-2 h-4 w-4" />
-                  {plantId ? 'Finalizar y Publicar' : 'Crear y Publicar'}
-                  {uploadedImages.length > 0 && (
-                    <span className="ml-2 px-2 py-1 bg-green-500 text-white text-xs rounded-full">+{uploadedImages.length} img</span>
-                  )}
-                </>
-              )}
-            </Button>
-          </div>
-        </div>
-      </form>
-    </div>
-  )
-}
+                      title

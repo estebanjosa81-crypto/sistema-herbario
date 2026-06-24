@@ -103,23 +103,34 @@ const create = async (data) => {
   };
 };
 
-// pqrsdf.getAll — solo admin, para futura vista de gestión
+const PQRSDF_ALLOWED_SORT = {
+  created_at: 'p.created_at',
+  status:     'p.status',
+  tipo:       'p.tipo',
+  nombre:     'p.nombre',
+  radicado:   'p.radicado',
+};
+
+// pqrsdf.getAll — solo admin
 const getAll = async (data, user) => {
   if (!user || user.role !== 'admin') throw new Error('Permisos insuficientes');
 
-  const { tipo, status, page = 1, limit = 20 } = data || {};
+  const { tipo, status, search = '', page = 1, limit = 20, sortBy, sortDir = 'desc' } = data || {};
   const offset = (page - 1) * limit;
   const conditions = [];
   const params = [];
 
-  if (tipo)   { conditions.push('p.tipo = ?');   params.push(tipo); }
-  if (status) { conditions.push('p.status = ?'); params.push(status); }
+  if (tipo   && tipo   !== 'all') { conditions.push('p.tipo = ?');   params.push(tipo); }
+  if (status && status !== 'all') { conditions.push('p.status = ?'); params.push(status); }
+  if (search.trim()) {
+    conditions.push('(p.radicado LIKE ? OR p.nombre LIKE ? OR p.email LIKE ? OR p.mensaje LIKE ?)');
+    const q = `%${search.trim()}%`;
+    params.push(q, q, q, q);
+  }
 
-  const whereP = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
-  // Para COUNT usamos condiciones sin prefijo de tabla
-  const whereCount = conditions.length
-    ? `WHERE ${conditions.map(c => c.replace(/^p\./, '')).join(' AND ')}`
-    : '';
+  const whereP     = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+  const orderCol   = PQRSDF_ALLOWED_SORT[sortBy] || 'p.created_at';
+  const orderDir   = sortDir === 'asc' ? 'ASC' : 'DESC';
 
   let rows;
   try {
@@ -127,20 +138,20 @@ const getAll = async (data, user) => {
       `SELECT p.*, u.name AS responded_by_name, u.email AS responded_by_email
        FROM pqrsdf p
        LEFT JOIN users u ON u.id = p.responded_by
-       ${whereP} ORDER BY p.created_at DESC LIMIT ? OFFSET ?`,
+       ${whereP} ORDER BY ${orderCol} ${orderDir} LIMIT ? OFFSET ?`,
       [...params, Number(limit), Number(offset)]
     );
   } catch (e) {
     if (e.code === 'ER_BAD_FIELD_ERROR') {
       [rows] = await db.query(
-        `SELECT * FROM pqrsdf ${whereCount} ORDER BY created_at DESC LIMIT ? OFFSET ?`,
+        `SELECT * FROM pqrsdf p ${whereP} ORDER BY p.created_at ${orderDir} LIMIT ? OFFSET ?`,
         [...params, Number(limit), Number(offset)]
       );
     } else { throw e; }
   }
 
   const [[{ total }]] = await db.query(
-    `SELECT COUNT(*) as total FROM pqrsdf ${whereCount}`,
+    `SELECT COUNT(*) as total FROM pqrsdf p ${whereP}`,
     params
   );
 
@@ -218,15 +229,4 @@ const getById = async (data, user) => {
   if (!rows.length) throw new Error('Solicitud no encontrada');
 
   const [logs] = await db.query(
-    `SELECT al.action, al.description, al.created_at, u.name AS user_name
-     FROM activity_logs al
-     LEFT JOIN users u ON u.id = al.user_id
-     WHERE al.entity_type = 'pqrsdf' AND al.entity_id = ?
-     ORDER BY al.created_at ASC`,
-    [id]
-  );
-
-  return { pqrsdf: rows[0], history: logs };
-};
-
-module.exports = { create, getAll, updateStatus, respond, getById };
+ 

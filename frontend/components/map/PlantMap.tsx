@@ -30,6 +30,8 @@ interface PlantMapProps {
   onPlantClick?: (plantId: number) => void
   height?: string
   className?: string
+  selectedPlantId?: number
+  focusedCoords?: { lat: number; lng: number }
 }
 
 // ── Componente principal ──────────────────────────────────────────────────────
@@ -39,6 +41,8 @@ export default function PlantMap({
   onPlantClick,
   height = '500px',
   className = '',
+  selectedPlantId,
+  focusedCoords,
 }: PlantMapProps) {
   const [legendOpen, setLegendOpen] = useState(true)
 
@@ -81,6 +85,8 @@ export default function PlantMap({
         plants={plants}
         familyColorMap={familyColorMap}
         onPlantClick={onPlantClick}
+        selectedPlantId={selectedPlantId}
+        focusedCoords={focusedCoords}
       />
 
       {/* ── Panel de estadísticas (esquina inferior izquierda) ───────────── */}
@@ -118,14 +124,4 @@ export default function PlantMap({
               {legendEntries.map(e => (
                 <li key={e.family} className="legend-item">
                   <span className="legend-dot" style={{ background: e.color }} />
-                  <span className="legend-family">{e.family}</span>
-                  <span className="legend-count">{e.count}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      )}
-    </div>
-  )
-}
+                  <span className="legend-family">{e.family}<

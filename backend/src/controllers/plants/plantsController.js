@@ -426,7 +426,7 @@ const create = async (req, res) => {
       infraspecific_epithet, taxonomic_status || 'accepted', taxon_rank || 'species', taxon_remarks,
       kingdom || 'Plantae', phylum || 'Magnoliophyta', class_name || 'Equisetopsida', order_name, subfamily, subgenus,
       catalog_number, determination_date, determined_by, identified_by, date_identified, type_status || 'none',
-      institution_code || 'Instituto Tecnológico del Putumayo (ITP)', institution_id || '800.247.940', collection_code || 'HEAA', collection_id, geodetic || 'WGS84',
+      institution_code || 'Instituto Tecnológico del Putumayo (ITP)', institution_id || '800.247.940', collection_code || 'HEAA', collection_id || 'HEAA-ITP', geodetic || 'WGS84',
       occurrence_id, basis_of_record, record_type,
       recorded_by, record_number, additional_collectors, event_date,
       field_number, field_notes, organism_quantity, organism_quantity_type,
@@ -917,6 +917,69 @@ const getFilterOptions = async (data, user) => {
 };
 
 /**
+ * Colecciones distintas registradas en la BD
+ * Útil para el buscador del formulario de nueva planta.
+ * Parámetros opcionales: { q: string } — filtra por código
+ */
+/**
+ * Buscador de colectores: combina usuarios de la BD + recorded_by existentes en plantas.
+ * Parámetros: { q: string }
+ */
+const getCollectors = async (data) => {
+  const q = (data?.q ?? '').trim();
+  const like = `%${q}%`;
+
+  // Usuarios activos de la BD
+  const [users] = await db.query(
+    `SELECT name FROM users WHERE status = 'active' AND name LIKE ? ORDER BY name ASC LIMIT 20`,
+    [like]
+  );
+
+  // Colectores registrados en plantas (recorded_by)
+  const [collectors] = await db.query(
+    `SELECT DISTINCT recorded_by AS name FROM plants
+     WHERE recorded_by IS NOT NULL AND recorded_by != '' AND recorded_by LIKE ?
+     ORDER BY recorded_by ASC LIMIT 20`,
+    [like]
+  );
+
+  // Merge y dedup por nombre
+  const seen = new Set();
+  const results = [];
+  for (const row of [...users, ...collectors]) {
+    const name = row.name?.trim();
+    if (name && !seen.has(name.toLowerCase())) {
+      seen.add(name.toLowerCase());
+      results.push(name);
+    }
+  }
+  results.sort((a, b) => a.localeCompare(b));
+  return { collectors: results.slice(0, 20) };
+};
+
+const getCollections = async (data) => {
+  const q = data?.q?.trim() ?? '';
+  const params = q ? [`%${q}%`, `%${q}%`] : [];
+  const where  = q ? 'WHERE (collection_code LIKE ? OR collection_id LIKE ?) AND collection_code IS NOT NULL'
+                   : 'WHERE collection_code IS NOT NULL';
+  const [rows] = await db.query(
+    `SELECT collection_code, MAX(COALESCE(collection_id, '')) AS collection_id
+     FROM plants
+     ${where}
+     GROUP BY collection_code
+     ORDER BY collection_code ASC
+     LIMIT 30`,
+    params
+  );
+  return {
+    collections: rows.map(r => ({
+      code: r.collection_code,
+      id:   r.collection_id ?? '',
+    })),
+  };
+};
+
+/**
  * Búsqueda avanzada con múltiples filtros
  */
 const advancedSearch = async (req, res) => {
@@ -1117,55 +1180,4 @@ const importData = async (data, user) => {
  * de versiones anteriores del sistema. Elimina también sus imágenes.
  */
 const purgeDeleted = async (data, user) => {
-  const [rows] = await db.query('SELECT id FROM plants WHERE status = ?', ['deleted']);
-  if (rows.length === 0) return { purged: 0, message: 'No hay registros eliminados que limpiar.' };
-  const ids = rows.map(r => r.id);
-  await db.query('DELETE FROM plant_images WHERE plant_id IN (?)', [ids]);
-  await db.query('DELETE FROM plants WHERE id IN (?)', [ids]);
-  logger.info(`Purgados ${ids.length} registros soft-deleted por usuario ID ${user?.id}`);
-  return { purged: ids.length, message: `${ids.length} registro(s) eliminado(s) permanentemente.` };
-};
-
-module.exports = {
-  getAll,
-  getById,
-  create,
-  update,
-  delete: deletePlant,
-  purgeDeleted,
-  importData,
-  getFeaturedPlants,
-  getFeaturedPlantsData,
-  getFilterOptions,
-  advancedSearch,
-  getStats,
-  // Aliases para compatibilidad
-  bulkDelete: deletePlant,
-  search: advancedSearch,
-  searchByFamily: advancedSearch,
-  searchByGenus: advancedSearch,
-  searchByLocation: advancedSearch,
-  searchByCollector: advancedSearch,
-  getRandomPlants: getFeaturedPlants,
-  getRecent: getAll,
-  getMostViewed: async (data) => {
-    const limit = Math.min(parseInt(data?.limit || 5), 50);
-    const [plants] = await db.query(
-      `SELECT id, scientific_name, common_name, COALESCE(views, 0) AS views
-       FROM plants
-       ORDER BY views DESC LIMIT ?`,
-      [limit]
-    );
-    return plants;
-  },
-  getByStatus: getAll,
-  uploadImage: async () => ({ success: false, error: 'Usar servicio uploads.uploadFile' }),
-  deleteImage: async () => ({ success: false, error: 'Usar servicio uploads.deleteFile' }),
-  getImages: async () => ({ success: false, error: 'Incluido en getById' }),
-  setMainImage: async () => ({ success: false, error: 'Usar servicio uploads.setMainImage' }),
-  exportData,
-  getExportFormats,
-  checkDuplicates: async () => ({ success: false, error: 'Funcionalidad pendiente' }),
-  validatePlantData: async () => ({ success: false, error: 'Funcionalidad pendiente' }),
-  getFieldValues: getFilterOptions
-};
+  const [rows] = await db.query('SELECT id FROM plants WHERE status 

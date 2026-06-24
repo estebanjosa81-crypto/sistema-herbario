@@ -65,11 +65,4 @@ async function run() {
     try { await conn.query(fk); } catch { /* ya existe */ }
   }
 
-  console.log('\n🎉 Migración completada. Reinicia el servidor backend.\n');
-  await conn.end();
-}
-
-run().catch(err => {
-  console.error('\n❌ Error:', err.message, '\n');
-  process.exit(1);
-});
+  console.log('\n🎉 Migración completada. Reinicia el serv

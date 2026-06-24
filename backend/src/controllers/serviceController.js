@@ -55,7 +55,10 @@ const SERVICES_REQUIRING_AUTH = [
   'export.plants',
   'export.statistics',
   'export.collections',
-  
+
+  // Backup
+  'backup.generate',
+
   // Notificaciones
   'notifications.getAll',
   'notifications.markAsRead',
@@ -175,6 +178,7 @@ const handleRequest = async (req, res) => {
       'uploads.deleteImage',
       'export.plants', 'export.statistics', 'export.collections',
       'posts.create', 'posts.update', 'posts.delete',
+      'backup.generate',
     ];
 
     if (adminServices.includes(service) && (!user || user.role !== 'admin')) {
@@ -231,11 +235,4 @@ const handleRequest = async (req, res) => {
       code: error.code,
       service: req.body.service,
       timestamp: new Date().toISOString()
-    });
-  }
-};
-
-module.exports = {
-  handleRequest
-};
-
+  

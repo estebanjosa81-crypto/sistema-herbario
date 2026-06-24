@@ -116,15 +116,39 @@ function ResetViewControl() {
   return null
 }
 
+// ── Sub-componente: vuela a coordenadas exactas ───────────────────────────────
+
+function FlyToPlant({ focusedCoords }: { focusedCoords?: { lat: number; lng: number } }) {
+  const map = useMap()
+
+  useEffect(() => {
+    if (!focusedCoords) return
+    const { lat, lng } = focusedCoords
+
+    // Delay para dejar que Leaflet termine de montar y FitBounds se resuelva
+    const t = setTimeout(() => {
+      try {
+        map.flyTo([lat, lng], 15, { animate: true, duration: 1.2 })
+      } catch { /* ignorar estado inconsistente */ }
+    }, 600)
+
+    return () => clearTimeout(t)
+  }, [focusedCoords, map])
+
+  return null
+}
+
 // ── Componente principal ─────────────────────────────────────────────────────
 
 interface Props {
   plants: PlantMapData[]
   familyColorMap: Map<string, string>
   onPlantClick?: (plantId: number) => void
+  selectedPlantId?: number
+  focusedCoords?: { lat: number; lng: number }
 }
 
-export default function MapContainerInternal({ plants, familyColorMap, onPlantClick }: Props) {
+export default function MapContainerInternal({ plants, familyColorMap, onPlantClick, selectedPlantId, focusedCoords }: Props) {
   const router = useRouter()
 
   const validPlants = plants.filter(
@@ -173,6 +197,7 @@ export default function MapContainerInternal({ plants, familyColorMap, onPlantCl
 
       <FitBounds plants={validPlants} />
       <ResetViewControl />
+      <FlyToPlant focusedCoords={focusedCoords} />
 
       {/* ── Marcadores agrupados ─────────────────────────────────────────── */}
       <MarkerClusterGroup
@@ -241,31 +266,4 @@ export default function MapContainerInternal({ plants, familyColorMap, onPlantCl
                     )}
 
                     {plant.plant_habit && (
-                      <span className="popup-habit">
-                        🌿&nbsp;{plant.plant_habit}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Insignia de borrador */}
-                  {plant.status && plant.status !== 'published' && (
-                    <span className="popup-status-badge">
-                      {plant.status === 'draft' ? 'Borrador' : plant.status}
-                    </span>
-                  )}
-
-                  <button
-                    className="view-details"
-                    onClick={() => handlePlantClick(plant.id)}
-                  >
-                    Ver ficha completa →
-                  </button>
-                </div>
-              </Popup>
-            </Marker>
-          )
-        })}
-      </MarkerClusterGroup>
-    </MapContainer>
-  )
-}
+              

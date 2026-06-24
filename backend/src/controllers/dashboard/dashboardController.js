@@ -477,16 +477,16 @@ const getPublicStats = async (req, res) => {
  */
 const getPublicStatsData = async (data, user) => {
   try {
-    const [totalPlants] = await db.query('SELECT COUNT(*) as total FROM plants WHERE status = "published"');
+    const [totalPlants]   = await db.query('SELECT COUNT(*) as total FROM plants WHERE status = "published"');
     const [totalFamilies] = await db.query('SELECT COUNT(DISTINCT family) as total FROM plants WHERE status = "published"');
-    const [totalGenera] = await db.query('SELECT COUNT(DISTINCT genus) as total FROM plants WHERE status = "published"');
-    const [totalLocations] = await db.query('SELECT COUNT(DISTINCT CONCAT(state_province, "-", municipality)) as total FROM plants WHERE status = "published"');
+    const [totalGenera]   = await db.query('SELECT COUNT(DISTINCT genus) as total FROM plants WHERE status = "published"');
+    const [totalSpecies]  = await db.query('SELECT COUNT(DISTINCT scientific_name) as total FROM plants WHERE status = "published"');
 
     return {
-      totalPlants: totalPlants[0].total,
+      totalPlants:   totalPlants[0].total,
       totalFamilies: totalFamilies[0].total,
-      totalGenera: totalGenera[0].total,
-      totalLocations: totalLocations[0].total,
+      totalGenera:   totalGenera[0].total,
+      totalSpecies:  totalSpecies[0].total,
       institution: 'Instituto Tecnológico del Putumayo',
       lastUpdate: new Date().toISOString()
     };

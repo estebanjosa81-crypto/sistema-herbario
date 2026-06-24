@@ -11,6 +11,9 @@ const settingsController = require('../controllers/settings/settingsController')
 const pqrsdfController   = require('../controllers/pqrsdf/pqrsdfController');
 const postsController    = require('../controllers/posts/postsController');
 const chatbotController  = require('../controllers/chatbot/chatbotController');
+const gbifController        = require('../controllers/gbif/gbifController');
+const countriesController   = require('../controllers/locations/countriesController');
+const backupController      = require('../controllers/backup/backupController');
 
 // Controladores específicos para servicios (sin req/res)
 const getAllPlants = require('../controllers/plants/getAll');
@@ -71,6 +74,8 @@ const services = {
   
   // Estadísticas de plantas
   'plants.getStats': plantsController.getStats,
+  'plants.getCollections': plantsController.getCollections,
+  'plants.getCollectors':  plantsController.getCollectors,
   'plants.getByStatus': plantsController.getByStatus,
   'plants.getRecent': plantsController.getRecent,
   'plants.getMostViewed': plantsController.getMostViewed,
@@ -223,48 +228,24 @@ const services = {
   'chatbot.send':   chatbotController.send,
 
   // ===============================
+  // GBIF (proxy público — no requiere auth)
+  // ===============================
+  'gbif.suggest': gbifController.suggest,
+  'gbif.match':   gbifController.match,
+
+  // ===============================
+  // GEO (proxy CountriesNow — público, con caché 24 h)
+  // ===============================
+  'geo.getCountries': countriesController.getCountries,
+  'geo.getStates':    countriesController.getStates,
+  'geo.getCities':    countriesController.getCities,
+
+  // ===============================
+  // BACKUP (solo admin)
+  // ===============================
+  'backup.generate': backupController.generate,
+
+  // ===============================
   // SERVICIOS DE VALIDACIÓN
   // ===============================
-  'validation.checkDuplicates': plantsController.checkDuplicates,
-  'validation.validatePlantData': plantsController.validatePlantData,
-  'validation.validateTaxonomy': taxonomyController.validateTaxonomy,
-  'validation.validateLocation': locationsController.validateLocation,
-};
-
-/**
- * Obtener lista de todos los servicios disponibles
- */
-const getAvailableServices = () => {
-  return Object.keys(services).sort();
-};
-
-/**
- * Verificar si un servicio existe
- */
-const serviceExists = (serviceName) => {
-  return services.hasOwnProperty(serviceName);
-};
-
-/**
- * Obtener servicios por categoría
- */
-const getServicesByCategory = () => {
-  const categories = {};
-  
-  Object.keys(services).forEach(serviceName => {
-    const category = serviceName.split('.')[0];
-    if (!categories[category]) {
-      categories[category] = [];
-    }
-    categories[category].push(serviceName);
-  });
-  
-  return categories;
-};
-
-module.exports = {
-  services,
-  getAvailableServices,
-  serviceExists,
-  getServicesByCategory
-};
+  'validation.chec
