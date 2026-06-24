@@ -2,9 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { DataTable, ColDef, FilterDef, BulkAction } from "@/components/ui/data-table"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { useToast } from "@/hooks/use-toast"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -12,10 +10,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
 import {
-  Plus, Search, Edit2, Eye, EyeOff, Trash2, Globe, FileSpreadsheet,
-  Loader2, CheckCircle2, Upload, ChevronLeft, ChevronRight, X,
+  Plus, Edit2, Eye, EyeOff, Trash2, Globe, FileSpreadsheet,
+  Loader2, CheckCircle2, Upload, X,
   AlertCircle, BookOpen, MapPin, Calendar, ImageIcon, ExternalLink, DatabaseZap,
-  Download
+  Download, Database
 } from "lucide-react"
 import Link from "next/link"
 import { apiService } from "@/lib/api"
@@ -28,12 +26,33 @@ interface Plant {
   vernacular_name?: string
   family?: string
   genus?: string
+  specific_epithet?: string
   recorded_by?: string
   event_date?: string
+  country?: string
   state_province?: string
+  county?: string        // municipio (Darwin Core)
+  municipality?: string  // vereda
+  locality?: string
+  habitat?: string
+  plant_habit?: string
+  decimal_latitude?: number
+  decimal_longitude?: number
+  featured?: boolean
   status: "published" | "draft" | "review" | "deleted"
   views?: number
   created_at: string
+  created_by_name?: string
+  identified_by?: string
+  determined_by?: string
+  date_identified?: string
+  organism_quantity?: string
+  organism_quantity_type?: string
+  conservation_status?: string
+  // Imagen principal (desde plant_images)
+  main_image_thumbnail?: string
+  main_image_url?: string
+  image_count?: number
 }
 
 interface PaginationData {
@@ -129,13 +148,18 @@ export default function AdminPlantas() {
   const [plantas, setPlantas] = useState<Plant[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
-  const [statusFilter, setStatusFilter] = useState("all")
+  const [activeFilters, setAF] = useState<Record<string, string>>({})
+  const [sort, setSort] = useState<{ id: string; dir: "asc" | "desc" } | null>(null)
   const [page, setPage] = useState(1)
+  const [limit, setLimit] = useState(25)
   const [pagination, setPagination] = useState<PaginationData>({
     page: 1, limit: 25, total: 0, totalPages: 0, hasNext: false, hasPrev: false,
   })
-  const [selected, setSelected] = useState<Set<number>>(new Set())
+  const [selected, setSelected] = useState<Set<string | number>>(new Set())
   const [bulkLoading, setBulkLoading] = useState(false)
+  const [exporting, setExporting] = useState(false)
+  const [backingUp, setBackingUp] = useState(false)
+
   // Import dialog
   const [importOpen, setImportOpen] = useState(false)
   const [importRows, setImportRows] = useState<Record<string, any>[]>([])
@@ -157,11 +181,14 @@ export default function AdminPlantas() {
   const load = useCallback(async () => {
     setLoading(true)
     try {
+      const status = activeFilters.status && activeFilters.status !== "all"
+        ? activeFilters.status : "all"
       const res = await apiService.getPlants({
-        page,
-        limit: 25,
+        page, limit,
         search: search || undefined,
-        status: statusFilter === "all" ? "all" : statusFilter,
+        status,
+        sortBy:  sort?.id,
+        sortDir: sort?.dir,
       })
       if (res.success && res.data?.plants) {
         setPlantas(res.data.plants)
@@ -176,15 +203,9 @@ export default function AdminPlantas() {
       }
     } catch { setPlantas([]) }
     finally { setLoading(false) }
-  }, [page, search, statusFilter])
+  }, [page, limit, search, activeFilters, sort])
 
-  useEffect(() => {
-    const t = setTimeout(load, search ? 400 : 0)
-    return () => clearTimeout(t)
-  }, [load])
-
-  // Resetear a página 1 cuando cambia el filtro o búsqueda
-  useEffect(() => { setPage(1) }, [search, statusFilter])
+  useEffect(() => { load() }, [load])
 
   // ── Detail modal ──────────────────────────────────────────────────────────
   const openDetail = async (id: number) => {
@@ -199,14 +220,6 @@ export default function AdminPlantas() {
   }
 
   // ── Selección ──────────────────────────────────────────────────────────────
-  const toggleSelect = (id: number) =>
-    setSelected(prev => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s })
-
-  const toggleAll = () =>
-    setSelected(prev =>
-      prev.size === plantas.length ? new Set() : new Set(plantas.map(p => p.id))
-    )
-
   const clearSelection = () => setSelected(new Set())
 
   // ── Acciones ───────────────────────────────────────────────────────────────
@@ -220,7 +233,7 @@ export default function AdminPlantas() {
     setDeleting(true)
     try {
       if (deleteTarget.isBulk) {
-        for (const id of selected) await apiService.deletePlant(id)
+        for (const id of selected) await apiService.deletePlant(id as number)
         toast({ title: "Eliminados", description: `${selected.size} espécimen(es) eliminados permanentemente.` })
         clearSelection()
       } else {
@@ -275,7 +288,7 @@ export default function AdminPlantas() {
     if (!selected.size) return
     setBulkLoading(true)
     try {
-      for (const id of selected) await apiService.updatePlant(id, { status: "published" })
+      for (const id of selected) await apiService.updatePlant(id as number, { status: "published" })
       toast({ title: "Publicados", description: `${selected.size} espécimen(es) publicados correctamente.` })
     } catch (e: any) {
       toast({ title: "Error al publicar", description: e.message, variant: "destructive" })
@@ -426,42 +439,280 @@ export default function AdminPlantas() {
     if (fileRef.current) fileRef.current.value = ""
   }
 
-  // ── Stats locales ──────────────────────────────────────────────────────────
-  const stats = {
-    total:     pagination.total,
-    published: plantas.filter(p => p.status === "published").length,
-    draft:     plantas.filter(p => p.status === "draft").length,
-    review:    plantas.filter(p => p.status === "review").length,
+  // ── Backup SQL ────────────────────────────────────────────────────────────
+  const doBackup = async () => {
+    setBackingUp(true)
+    try {
+      const res = await apiService.generateBackup()
+      if (!res.success || !res.data) {
+        toast({ title: "Error al generar backup", description: res.error ?? "Error desconocido", variant: "destructive" })
+        return
+      }
+      const { sql, filename } = res.data
+      const blob = new Blob([sql], { type: "application/sql;charset=utf-8;" })
+      const url  = URL.createObjectURL(blob)
+      const a    = document.createElement("a")
+      a.href = url; a.download = filename; a.click()
+      URL.revokeObjectURL(url)
+      toast({ title: "Backup descargado", description: filename })
+    } catch (e: any) {
+      toast({ title: "Error al generar backup", description: e.message, variant: "destructive" })
+    } finally { setBackingUp(false) }
   }
 
-  const fromN = (page - 1) * pagination.limit + 1
-  const toN   = Math.min(page * pagination.limit, pagination.total)
+  // ── Exportar CSV ──────────────────────────────────────────────────────────
+  const doExport = async () => {
+    setExporting(true)
+    try {
+      const res = await apiService.exportPlants({ search: search || undefined })
+      if (!res.success || !res.data) {
+        toast({ title: "Error al exportar", description: res.error ?? "Error desconocido", variant: "destructive" })
+        return
+      }
+      const { csv, filename } = res.data
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" })
+      const url  = URL.createObjectURL(blob)
+      const a    = document.createElement("a")
+      a.href = url; a.download = filename; a.click()
+      URL.revokeObjectURL(url)
+      toast({ title: `CSV exportado`, description: `${res.data.count} especímenes descargados` })
+    } catch (e: any) {
+      toast({ title: "Error al exportar", description: e.message, variant: "destructive" })
+    } finally { setExporting(false) }
+  }
+
+  // ── Conservation status badge ──────────────────────────────────────────────
+  const conservationCls = (cs?: string) => {
+    if (!cs) return null
+    if (cs.includes('crítico'))  return 'bg-red-100 text-red-700 border-red-200'
+    if (cs.includes('peligro'))  return 'bg-orange-100 text-orange-700 border-orange-200'
+    if (cs === 'Vulnerable')     return 'bg-amber-100 text-amber-700 border-amber-200'
+    if (cs.includes('amenazada'))return 'bg-yellow-100 text-yellow-700 border-yellow-200'
+    if (cs.includes('menor'))    return 'bg-green-100 text-green-700 border-green-200'
+    if (cs.includes('Extinta'))  return 'bg-gray-200 text-gray-700 border-gray-300'
+    return null
+  }
+
+  // ── Columnas DataTable ──────────────────────────────────────────────────────
+  const COLUMNS: ColDef<Plant>[] = [
+    {
+      id: "image", header: "",
+      cell: p => (
+        <div className="relative w-10 h-10 rounded-md overflow-hidden border bg-muted flex-shrink-0">
+          {p.main_image_thumbnail || p.main_image_url ? (
+            <img src={p.main_image_thumbnail || p.main_image_url} alt={p.scientific_name}
+              className="w-full h-full object-cover"
+              onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <ImageIcon className="h-4 w-4 text-muted-foreground/40" />
+            </div>
+          )}
+          {(p.image_count ?? 0) > 1 && (
+            <span className="absolute bottom-0 right-0 bg-black/60 text-white text-[9px] px-1 leading-4 rounded-tl">
+              {p.image_count}
+            </span>
+          )}
+        </div>
+      ),
+    },
+    {
+      id: "catalog_number", header: "Catálogo", sortable: true,
+      cell: p => p.catalog_number
+        ? <span className="bg-muted px-1.5 py-0.5 rounded font-mono text-xs">{p.catalog_number}</span>
+        : <span className="opacity-30 text-xs">—</span>,
+    },
+    {
+      id: "scientific_name", header: "Espécimen", sortable: true,
+      cell: p => (
+        <div>
+          <p className="italic text-sm font-semibold leading-tight">{p.scientific_name}</p>
+          {(p.vernacular_name || p.common_name) && (
+            <p className="text-xs text-muted-foreground mt-0.5 not-italic">{p.vernacular_name || p.common_name}</p>
+          )}
+        </div>
+      ),
+    },
+    {
+      id: "family", header: "Familia / Género", sortable: true, hideBelow: "lg",
+      cell: p => (p.family || p.genus)
+        ? <div>
+            {p.family && <p className="text-xs font-medium">{p.family}</p>}
+            {p.genus  && <p className="text-xs italic text-muted-foreground mt-0.5">{p.genus}</p>}
+          </div>
+        : <span className="text-xs opacity-30">—</span>,
+    },
+    {
+      id: "recorded_by", header: "Colector", sortable: true, hideBelow: "md",
+      cell: p => (p.recorded_by || p.event_date)
+        ? <div>
+            {p.recorded_by && <p className="text-xs truncate max-w-[10rem]">{p.recorded_by}</p>}
+            {p.event_date  && <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1"><Calendar className="h-2.5 w-2.5" />{fmtDate(p.event_date)}</p>}
+          </div>
+        : <span className="text-xs opacity-30">—</span>,
+    },
+    {
+      id: "identified_by", header: "Taxónomo", hideBelow: "lg",
+      cell: p => (p.identified_by || p.determined_by)
+        ? <div>
+            <p className="text-xs truncate max-w-[9rem]">{p.identified_by || p.determined_by}</p>
+            {p.date_identified && <p className="text-[10px] text-muted-foreground mt-0.5 flex items-center gap-1"><Calendar className="h-2.5 w-2.5" />{fmtDate(p.date_identified)}</p>}
+          </div>
+        : <span className="text-xs opacity-30">—</span>,
+    },
+    {
+      id: "state_province", header: "Ubicación", hideBelow: "xl",
+      cell: p => (p.country || p.state_province || p.decimal_latitude)
+        ? <div>
+            {p.country        && <p className="text-xs font-medium">{p.country}</p>}
+            {p.state_province && <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1"><MapPin className="h-2.5 w-2.5" />{p.state_province}</p>}
+            {p.county         && <p className="text-xs text-muted-foreground/70 mt-0.5 pl-3.5">{p.county}</p>}
+            {(p.decimal_latitude && p.decimal_longitude) && (
+              <Link
+                href={`/plantas?search=${encodeURIComponent(p.scientific_name)}${p.family ? `&family=${encodeURIComponent(p.family)}` : ''}`}
+                target="_blank"
+                className="inline-flex items-center gap-0.5 mt-1 text-[10px] font-mono text-primary/70 hover:text-primary hover:underline transition-colors"
+                title="Ver en mapa"
+                onClick={e => e.stopPropagation()}
+              >
+                <MapPin className="h-2.5 w-2.5 shrink-0" />
+                {Number(p.decimal_latitude).toFixed(4)}, {Number(p.decimal_longitude).toFixed(4)}
+                <ExternalLink className="h-2 w-2 ml-0.5 opacity-60" />
+              </Link>
+            )}
+          </div>
+        : <span className="text-xs opacity-30">—</span>,
+    },
+    {
+      id: "organism_quantity", header: "Cantidad", hideBelow: "xl",
+      cell: p => {
+        const cls = conservationCls(p.conservation_status)
+        return (
+          <div>
+            {p.organism_quantity
+              ? <p className="text-xs font-medium">{p.organism_quantity}{p.organism_quantity_type && <span className="text-muted-foreground font-normal"> {p.organism_quantity_type}</span>}</p>
+              : <span className="text-xs opacity-30">—</span>
+            }
+            {cls && p.conservation_status && (
+              <span className={`inline-block mt-1 text-[10px] font-medium px-1.5 py-0.5 rounded border ${cls}`}>
+                {p.conservation_status}
+              </span>
+            )}
+          </div>
+        )
+      },
+    },
+    {
+      id: "status", header: "Estado", sortable: true,
+      cell: p => {
+        const s = STATUS_CFG[p.status] ?? STATUS_CFG.draft
+        return p.status === "published"
+          ? <span className={`inline-flex text-[11px] font-medium px-2 py-0.5 rounded-full border ${s.cls}`}>{s.label}</span>
+          : <div className="flex flex-col gap-1">
+              <span className={`inline-flex text-[11px] font-medium px-2 py-0.5 rounded-full border w-fit ${s.cls}`}>{s.label}</span>
+              <Button variant="ghost" size="sm" className="h-5 text-[10px] px-1 py-0 text-green-700 hover:text-green-800 hover:bg-green-50 w-fit"
+                onClick={e => { e.stopPropagation(); publishPlant(p.id) }}>
+                <Globe className="h-2.5 w-2.5 mr-1" />Publicar
+              </Button>
+            </div>
+      },
+    },
+    {
+      id: "_actions", header: "",
+      cell: p => (
+        <div className="flex items-center justify-end gap-1">
+          <Button variant="ghost" size="icon" className="h-7 w-7" title="Ver detalles"
+            onClick={e => { e.stopPropagation(); openDetail(p.id) }}>
+            <Eye className="h-3.5 w-3.5" />
+          </Button>
+          <Link href={`/admin/plantas/${p.id}/editar`} onClick={e => e.stopPropagation()}>
+            <Button variant="ghost" size="icon" className="h-7 w-7" title="Editar">
+              <Edit2 className="h-3.5 w-3.5" />
+            </Button>
+          </Link>
+          {p.status === "published"
+            ? <Button variant="ghost" size="icon" className="h-7 w-7 text-amber-600" title="Despublicar"
+                onClick={e => { e.stopPropagation(); unpublishPlant(p.id) }}>
+                <EyeOff className="h-3.5 w-3.5" />
+              </Button>
+            : <Button variant="ghost" size="icon" className="h-7 w-7 text-green-600" title="Publicar"
+                onClick={e => { e.stopPropagation(); publishPlant(p.id) }}>
+                <Globe className="h-3.5 w-3.5" />
+              </Button>
+          }
+          <Button variant="ghost" size="icon" className="h-7 w-7 text-red-500 hover:text-red-600" title="Eliminar"
+            onClick={e => { e.stopPropagation(); deletePlant(p.id, p.scientific_name) }}>
+            <Trash2 className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+      ),
+    },
+  ]
+
+  const FILTERS: FilterDef[] = [
+    {
+      id: "status", label: "Estado", type: "select",
+      options: [
+        { value: "published", label: "Publicados" },
+        { value: "draft",     label: "Borradores" },
+        { value: "review",    label: "En revisión" },
+        { value: "all",       label: "Todos" },
+      ],
+    },
+  ]
+
+  const BULK_ACTIONS: BulkAction[] = [
+    {
+      id: "publish", label: "Publicar todos", variant: "outline",
+      icon: <Globe className="h-3 w-3" />,
+      onClick: (ids) => {
+        setSelected(ids)
+        bulkPublish()
+      },
+    },
+    {
+      id: "delete", label: "Eliminar", variant: "destructive",
+      icon: <Trash2 className="h-3 w-3" />,
+      onClick: (ids) => {
+        setSelected(ids)
+        bulkDelete()
+      },
+    },
+  ]
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5 p-1">
       {/* ── Cabecera ─────────────────────────────────────────────────────── */}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Herbario</h1>
-          <p className="text-sm text-muted-foreground">
-            {pagination.total.toLocaleString()} especímenes registrados
+          <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
+            <BookOpen className="h-6 w-6 text-green-600" />
+            Herbario Digital
+          </h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            Colección de especímenes botánicos — HEAA
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => { setImportOpen(true); resetImport() }}
-          >
+        <div className="flex gap-2 flex-wrap">
+          <Button variant="outline" size="sm" onClick={doExport} disabled={exporting}>
+            {exporting
+              ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Exportando…</>
+              : <><Download className="h-4 w-4 mr-2" />Exportar CSV</>}
+          </Button>
+          <Button variant="outline" size="sm" onClick={doBackup} disabled={backingUp}>
+            {backingUp
+              ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Generando…</>
+              : <><Database className="h-4 w-4 mr-2" />Backup .sql</>}
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => { setImportOpen(true); resetImport() }}>
             <FileSpreadsheet className="h-4 w-4 mr-2" />
             Importar Excel
           </Button>
           <Button
-            variant="outline"
-            size="sm"
+            variant="outline" size="sm"
             className="text-orange-600 border-orange-200 hover:bg-orange-50"
             onClick={purgeDeletedLegacy}
-            title="Elimina permanentemente los registros con estado 'eliminado' que quedaron de versiones anteriores. Libera números de catálogo para reutilización."
+            title="Elimina permanentemente los registros con estado 'eliminado' heredados."
           >
             <DatabaseZap className="h-4 w-4 mr-2" />
             Limpiar eliminados
@@ -475,243 +726,49 @@ export default function AdminPlantas() {
         </div>
       </div>
 
-      {/* ── Filtros ───────────────────────────────────────────────────────── */}
-      <div className="flex flex-wrap gap-2">
-        <div className="relative flex-1 min-w-48">
-          <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
-          <Input
-            placeholder="Buscar por nombre, familia, colector…"
-            className="pl-8 h-9 text-sm"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-          />
-        </div>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="h-9 w-36 text-sm">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos los estados</SelectItem>
-            <SelectItem value="published">Publicados</SelectItem>
-            <SelectItem value="draft">Borradores</SelectItem>
-            <SelectItem value="review">En revisión</SelectItem>
-          </SelectContent>
-        </Select>
+      {/* ── Tarjetas de estadísticas ─────────────────────────────────────── */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {[
+          { label: "Total",       value: pagination.total,                                                   color: "text-foreground",   bg: "bg-background" },
+          { label: "Publicados",  value: plantas.filter(p => p.status === "published").length,               color: "text-green-700",    bg: "bg-green-50 dark:bg-green-950/30" },
+          { label: "Borradores",  value: plantas.filter(p => p.status === "draft").length,                   color: "text-amber-700",    bg: "bg-amber-50 dark:bg-amber-950/30" },
+          { label: "En revisión", value: plantas.filter(p => p.status === "review").length,                  color: "text-sky-700",      bg: "bg-sky-50 dark:bg-sky-950/30" },
+        ].map(s => (
+          <div key={s.label} className={`rounded-lg border px-4 py-3 ${s.bg}`}>
+            <div className={`text-2xl font-bold ${s.color}`}>{s.value.toLocaleString()}</div>
+            <div className="text-xs text-muted-foreground mt-0.5">{s.label}</div>
+          </div>
+        ))}
       </div>
 
-      {/* ── Bulk actions ─────────────────────────────────────────────────── */}
-      {selected.size > 0 && (
-        <div className="flex items-center gap-3 px-3 py-2 bg-muted rounded-md text-sm">
-          <span className="font-medium">{selected.size} seleccionado(s)</span>
-          <div className="flex gap-2 ml-2">
-            <Button variant="outline" size="sm" className="h-7 text-xs" onClick={bulkPublish} disabled={bulkLoading}>
-              {bulkLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : "Publicar"}
-            </Button>
-            <Button variant="outline" size="sm" className="h-7 text-xs text-red-600 border-red-200 hover:bg-red-50" onClick={bulkDelete} disabled={bulkLoading}>
-              Eliminar
-            </Button>
-          </div>
-          <button className="ml-auto text-muted-foreground hover:text-foreground" onClick={clearSelection}>
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-      )}
-
-      {/* ── Tabla ────────────────────────────────────────────────────────── */}
-      <div className="rounded-lg border overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-muted/40 hover:bg-muted/40">
-              <TableHead className="w-10 pl-4">
-                <Checkbox
-                  checked={selected.size > 0 && selected.size === plantas.length}
-                  onCheckedChange={toggleAll}
-                />
-              </TableHead>
-              <TableHead className="w-28 text-xs font-medium">Catálogo</TableHead>
-              <TableHead className="text-xs font-medium">Nombre científico / Común</TableHead>
-              <TableHead className="text-xs font-medium w-36">Familia</TableHead>
-              <TableHead className="text-xs font-medium w-44">Colector</TableHead>
-              <TableHead className="text-xs font-medium w-32">Fecha col.</TableHead>
-              <TableHead className="text-xs font-medium w-28">Departamento</TableHead>
-              <TableHead className="text-xs font-medium w-24">Estado</TableHead>
-              <TableHead className="text-xs font-medium w-16 text-right pr-4">Vistas</TableHead>
-              <TableHead className="w-20 text-right pr-4"></TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {loading ? (
-              Array.from({ length: 8 }).map((_, i) => (
-                <TableRow key={i}>
-                  {Array.from({ length: 10 }).map((__, j) => (
-                    <TableCell key={j}>
-                      <div className="h-3.5 bg-muted rounded animate-pulse" style={{ width: j === 2 ? "80%" : "60%" }} />
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
-            ) : plantas.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={10} className="py-16 text-center">
-                  <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                    <BookOpen className="h-8 w-8 opacity-40" />
-                    <p className="text-sm">No se encontraron especímenes</p>
-                    {search && <p className="text-xs">Prueba con otro término de búsqueda</p>}
-                  </div>
-                </TableCell>
-              </TableRow>
-            ) : (
-              plantas.map(p => {
-                const s = STATUS_CFG[p.status] ?? STATUS_CFG.draft
-                return (
-                  <TableRow key={p.id} className="group hover:bg-muted/30">
-                    <TableCell className="pl-4 w-10">
-                      <Checkbox
-                        checked={selected.has(p.id)}
-                        onCheckedChange={() => toggleSelect(p.id)}
-                      />
-                    </TableCell>
-                    <TableCell className="font-mono text-xs text-muted-foreground">
-                      {p.catalog_number ?? <span className="opacity-40">—</span>}
-                    </TableCell>
-                    <TableCell>
-                      <p className="italic text-sm font-medium leading-tight">{p.scientific_name}</p>
-                      {(p.vernacular_name || p.common_name) && (
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          {p.vernacular_name || p.common_name}
-                        </p>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {p.family ?? <span className="opacity-40">—</span>}
-                    </TableCell>
-                    <TableCell className="text-xs text-muted-foreground max-w-[11rem] truncate">
-                      {p.recorded_by ?? <span className="opacity-40">—</span>}
-                    </TableCell>
-                    <TableCell className="text-xs text-muted-foreground">
-                      {fmtDate(p.event_date)}
-                    </TableCell>
-                    <TableCell className="text-xs text-muted-foreground">
-                      {p.state_province ?? <span className="opacity-40">—</span>}
-                    </TableCell>
-                    <TableCell>
-                      {p.status === "published" ? (
-                        <span className="inline-flex text-[11px] font-medium px-2 py-0.5 rounded-full border bg-green-100 text-green-700 border-green-200">
-                          Publicado
-                        </span>
-                      ) : (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-6 text-[11px] px-2 py-0 text-amber-700 border-amber-300 hover:bg-amber-50"
-                          onClick={() => publishPlant(p.id)}
-                        >
-                          Publicar
-                        </Button>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right text-xs text-muted-foreground pr-4">
-                      {p.views ?? 0}
-                    </TableCell>
-                    <TableCell className="pr-2">
-                      <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7"
-                          onClick={() => openDetail(p.id)}
-                          title="Ver detalles"
-                        >
-                          <Eye className="h-3.5 w-3.5" />
-                        </Button>
-                        <Link href={`/admin/plantas/${p.id}/editar`}>
-                          <Button variant="ghost" size="icon" className="h-7 w-7">
-                            <Edit2 className="h-3.5 w-3.5" />
-                          </Button>
-                        </Link>
-                        {p.status === "published" ? (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 text-amber-600 hover:text-amber-700"
-                            onClick={() => unpublishPlant(p.id)}
-                            title="Despublicar"
-                          >
-                            <EyeOff className="h-3.5 w-3.5" />
-                          </Button>
-                        ) : (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 text-green-600 hover:text-green-700"
-                            onClick={() => publishPlant(p.id)}
-                            title="Publicar"
-                          >
-                            <Globe className="h-3.5 w-3.5" />
-                          </Button>
-                        )}
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7 text-red-500 hover:text-red-600"
-                          onClick={() => deletePlant(p.id, p.scientific_name)}
-                          title="Eliminar"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                )
-              })
-            )}
-          </TableBody>
-        </Table>
-      </div>
-
-      {/* ── Paginación ───────────────────────────────────────────────────── */}
-      {pagination.totalPages > 1 && (
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-muted-foreground text-xs">
-            {fromN}–{toN} de {pagination.total.toLocaleString()}
-          </span>
-          <div className="flex items-center gap-1">
-            <Button
-              variant="outline"
-              size="icon"
-              className="h-8 w-8"
-              disabled={!pagination.hasPrev}
-              onClick={() => setPage(p => p - 1)}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
-              const n = Math.max(1, Math.min(pagination.totalPages - 4, page - 2)) + i
-              if (n > pagination.totalPages) return null
-              return (
-                <Button
-                  key={n}
-                  variant={n === page ? "default" : "outline"}
-                  size="icon"
-                  className="h-8 w-8 text-xs"
-                  onClick={() => setPage(n)}
-                >
-                  {n}
-                </Button>
-              )
-            })}
-            <Button
-              variant="outline"
-              size="icon"
-              className="h-8 w-8"
-              disabled={!pagination.hasNext}
-              onClick={() => setPage(p => p + 1)}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      )}
+      <DataTable<Plant>
+        data={plantas}
+        columns={COLUMNS}
+        getRowId={p => p.id}
+        loading={loading}
+        pagination={{
+          page, limit,
+          total: pagination.total,
+          onPageChange: setPage,
+          onLimitChange: n => { setLimit(n); setPage(1) },
+        }}
+        search={search}
+        onSearchChange={v => { setSearch(v); setPage(1) }}
+        searchPlaceholder="Buscar por nombre, familia, colector, catálogo…"
+        sort={sort}
+        onSortChange={setSort}
+        filters={FILTERS}
+        activeFilters={activeFilters}
+        onFilterChange={(id, v) => { setAF(prev => ({ ...prev, [id]: v })); setPage(1) }}
+        selectable
+        selectedIds={selected}
+        onSelectionChange={setSelected}
+        bulkActions={BULK_ACTIONS}
+        onRowClick={p => openDetail(p.id)}
+        emptyIcon={<BookOpen className="h-8 w-8 opacity-40" />}
+        emptyTitle="Sin especímenes"
+        emptyDescription={search ? "Prueba con otro término de búsqueda" : "Crea el primer espécimen botánico"}
+      />
 
       {/* ── Dialog Importar Excel ────────────────────────────────────────── */}
       <Dialog open={importOpen} onOpenChange={setImportOpen}>
@@ -1315,3 +1372,4 @@ function Field({
     </div>
   )
 }
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                

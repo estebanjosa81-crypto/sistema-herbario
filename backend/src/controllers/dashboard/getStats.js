@@ -192,41 +192,23 @@ const getStats = async (data, user) => {
     // ── Actividad reciente ─────────────────────────────────────────────────────
     const recentActivity = await safeQuery(async () => {
       const [rows] = await db.query(`
-        SELECT p.id, p.scientific_name, p.family, p.created_at,
-               u.name AS created_by_name
+        SELECT p.id, p.scientific_name, p.family, p.status, p.created_at,
+               u.name AS created_by_name,
+               pi.thumbnail_url AS main_image
         FROM plants p
         LEFT JOIN users u ON p.created_by = u.id
-        ORDER BY p.created_at DESC LIMIT 10
+        LEFT JOIN plant_images pi ON pi.plant_id = p.id AND pi.is_main = 1
+        ORDER BY p.created_at DESC LIMIT 8
       `);
       return rows;
     }, []);
 
-    logger.info(`Estadísticas del dashboard consultadas por ${user.email}`);
+    // ── Estado de plantas por status ───────────────────────────────────────────
+    const plantsByStatus = await safeQuery(async () => {
+      const [rows] = await db.query(
+        `SELECT status, COUNT(*) AS count FROM plants GROUP BY status ORDER BY count DESC`
+      );
+      return rows;
+    }, []);
 
-    return {
-      overview: {
-        totalPlants,
-        totalUsers,
-        totalViews,
-        plantsThisMonth,
-        usersThisMonth,
-        usersGrowth,
-        visitsThisMonth,
-        visitsGrowth,
-        avgSessionTime
-      },
-      distributions: {
-        topFamilies, topDepartments, topCollectors,
-        habitatStats, conservationStats, elevationStats
-      },
-      trends: { yearlyStats, monthlyStats },
-      recentActivity
-    };
-
-  } catch (error) {
-    logger.error('Error al obtener estadísticas del dashboard:', error);
-    throw error;
-  }
-};
-
-module.exports = getStats;
+    // ── Sugerencias ───────────────────────────────────────────────�

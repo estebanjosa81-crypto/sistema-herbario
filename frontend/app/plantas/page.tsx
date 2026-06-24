@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { Search, X, Map, List, Camera, ChevronUp, ChevronDown, ChevronsUpDown, Eye, Download, Loader2 } from "lucide-react"
 import { Input } from "@/components/ui/input"
@@ -61,12 +61,20 @@ interface PaginationData {
 
 export default function PlantasPage() {
   const router = useRouter()
+  // Ref para persistir la familia del URL fuera de closures asíncronos
+  const familyFromUrl = useRef<string>("")
   const [searchTerm, setSearchTerm] = useState("")
 
-  // Lee el término de búsqueda del navbar institucional (?search=...)
+  // Lee ?search= y ?family= de la URL (navbar institucional o links desde /admin/plantas)
   useEffect(() => {
-    const q = new URLSearchParams(window.location.search).get("search")
+    const params = new URLSearchParams(window.location.search)
+    const q = params.get("search")
+    const f = params.get("family")
     if (q) setSearchTerm(q)
+    if (f) {
+      familyFromUrl.current = f
+      setFamiliaFilter(f)
+    }
   }, [])
   const [familiaFilter, setFamiliaFilter] = useState("")
   const [advancedFilters, setAdvancedFilters] = useState<{ field: string; value: string }[]>([])
@@ -251,7 +259,12 @@ export default function PlantasPage() {
             value: family.name,
             label: `${family.name} (${family.speciesCount} especies)`
           }))
+          .sort((a, b) => a.value.localeCompare(b.value))
         setFamilies(mappedFamilies)
+        // Solo auto-seleccionar la primera familia si NO vino una familia por URL
+        if (mappedFamilies.length > 0 && !familyFromUrl.current) {
+          setFamiliaFilter(mappedFamilies[0].value)
+        }
       }
     } catch (error) {
       console.error("Error al cargar familias:", error)
@@ -791,14 +804,4 @@ export default function PlantasPage() {
                 </div>
               )}
 
-              {/* Información de resultados */}
-              <div className="text-center text-sm text-muted-foreground mt-4">
-                Mostrando {((currentPage - 1) * pagination.limit) + 1} - {Math.min(currentPage * pagination.limit, pagination.total)} de {pagination.total} plantas
-              </div>
-            </>
-          )}
-        </>
-      )}
-    </div>
-  )
-}
+           

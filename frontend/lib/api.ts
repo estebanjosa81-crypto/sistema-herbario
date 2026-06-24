@@ -45,11 +45,14 @@ class ApiService {
       // Parsear el body para extraer los datos
       const bodyData = JSON.parse(options.body as string || '{}');
       
-      // Extraer token de los headers si existe
-      let token = null;
+      // Extraer token: primero del header explícito, luego del storage
+      let token: string | null = null;
       if (options.headers && 'Authorization' in options.headers) {
         const authHeader = options.headers['Authorization'] as string;
         token = authHeader.replace('Bearer ', '');
+      }
+      if (!token) {
+        token = this.getToken();
       }
       
       const requestBody: any = {
@@ -172,6 +175,10 @@ class ApiService {
     department?: string;
     municipality?: string;
     status?: string;
+    catalog_number?: string;
+    record_number?: string;
+    collector?: string;
+    habitat?: string;
   } = {}): Promise<ApiResponse<{
     plants: any[];
     pagination: {
@@ -541,11 +548,22 @@ class ApiService {
     vernacular_name?: string; catalog_number?: string; record_number?: string;
     habitat?: string;
   }): Promise<ApiResponse<{ csv: string; filename: string; count: number; format: string }>> {
-    const token = this.getToken();
-    return this.fetchApi('plants.export', {
-      body: JSON.stringify(filters ?? {}),
-      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
-    });
+    return this.fetchApi('plants.export', { body: JSON.stringify(filters ?? {}) });
+  }
+
+  // Buscador de colectores (usuarios BD + recorded_by existentes)
+  async getCollectors(q: string): Promise<ApiResponse<{ collectors: string[] }>> {
+    return this.fetchApi('plants.getCollectors', { body: JSON.stringify({ q }) });
+  }
+
+  // Colecciones distintas registradas en la BD
+  async getCollections(q?: string): Promise<ApiResponse<{ collections: { code: string; id: string }[] }>> {
+    return this.fetchApi('plants.getCollections', { body: JSON.stringify({ q }) });
+  }
+
+  // Generar backup SQL completo de la BD
+  async generateBackup(tables?: string[]): Promise<ApiResponse<{ sql: string; filename: string; sizeKb: number; tables: number }>> {
+    return this.fetchApi('backup.generate', { body: JSON.stringify({ tables }) });
   }
 
   // Obtener familias
@@ -575,6 +593,59 @@ class ApiService {
     municipalities: Array<{value: string, label: string}>;
   }>> {
     return this.fetchApi('locations.getAll');
+  }
+
+  // ===============================
+  // GBIF (proxy a través del backend)
+  // ===============================
+
+  // ===============================
+  // GEO (países, estados, ciudades)
+  // ===============================
+
+  async geoGetCountries(): Promise<ApiResponse<{ countries: string[] }>> {
+    return this.fetchApi('geo.getCountries')
+  }
+
+  async geoGetStates(country: string): Promise<ApiResponse<{ states: string[] }>> {
+    return this.fetchApi('geo.getStates', { body: JSON.stringify({ country }) })
+  }
+
+  async geoGetCities(country: string, state: string): Promise<ApiResponse<{ cities: string[] }>> {
+    return this.fetchApi('geo.getCities', { body: JSON.stringify({ country, state }) })
+  }
+
+  async gbifSuggest(q: string, limit = 8): Promise<ApiResponse<{
+    suggestions: Array<{
+      key: number
+      canonicalName: string
+      scientificName: string
+      rank: string
+      family: string
+      genus: string
+      status: string
+    }>
+  }>> {
+    return this.fetchApi('gbif.suggest', { body: JSON.stringify({ q, limit }) })
+  }
+
+  async gbifMatch(name: string): Promise<ApiResponse<{
+    found: boolean
+    matchType: string
+    confidence?: number
+    usageKey?: number
+    scientificName?: string
+    scientificNameAuthorship?: string
+    specificEpithet?: string
+    taxonRank?: string
+    kingdom?: string
+    phylum?: string
+    class?: string
+    orderName?: string
+    family?: string
+    genus?: string
+  }>> {
+    return this.fetchApi('gbif.match', { body: JSON.stringify({ name }) })
   }
 
   // ===============================
@@ -742,6 +813,7 @@ class ApiService {
     totalPlants: number;
     totalFamilies: number;
     totalGenera: number;
+    totalSpecies: number;
     featuredPlants?: any[];
   }>> {
     return this.fetchApi('public.getStats');
@@ -894,31 +966,4 @@ class ApiService {
     anonimo?: boolean;
     nombre?: string;
     tipo_identificacion?: string;
-    numero_documento?: string;
-    direccion_correspondencia?: string;
-    medio_respuesta?: string;
-    telefono?: string;
-    pais?: string;
-    departamento?: string;
-    ciudad?: string;
-    email?: string;
-    fax?: string;
-    mensaje: string;
-    autoriza: boolean;
-  }): Promise<ApiResponse<{ radicado: string; tipo: string; fechaRadicacion: string; tiempoRespuesta: string; message: string }>> {
-    return this.fetchApi('pqrsdf.create', {
-      body: JSON.stringify(data)
-    });
-  }
-
-  // Eliminar imagen
-  async deleteImage(imageId: number): Promise<ApiResponse> {
-    return this.fetchApi('uploads.deleteImage', {
-      body: JSON.stringify({ imageId })
-    });
-  }
-}
-
-export const apiService = new ApiService();
-export type { User, AuthResponse, ApiResponse, LoginData, RegisterData };
-export default ApiService;
+    num

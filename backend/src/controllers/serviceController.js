@@ -55,7 +55,10 @@ const SERVICES_REQUIRING_AUTH = [
   'export.plants',
   'export.statistics',
   'export.collections',
-  
+
+  // Backup
+  'backup.generate',
+
   // Notificaciones
   'notifications.getAll',
   'notifications.markAsRead',
@@ -63,6 +66,16 @@ const SERVICES_REQUIRING_AUTH = [
 
   // PQRSDF (solo gestión admin — el create es público)
   'pqrsdf.getAll',
+  'pqrsdf.getById',
+  'pqrsdf.updateStatus',
+  'pqrsdf.respond',
+
+  // Sugerencias — acciones adicionales
+  'suggestions.update',
+  'suggestions.updateStatus',
+  'suggestions.respond',
+  'suggestions.getStats',
+  'suggestions.getById',
 
   // Publicaciones (admin para CUD)
   'posts.create',
@@ -157,12 +170,15 @@ const handleRequest = async (req, res) => {
       'users.getAll', 'users.create', 'users.update', 'users.delete', 'users.toggleStatus',
       'plants.create', 'plants.update', 'plants.delete', 'plants.import', 'plants.bulkDelete',
       'dashboard.getStats', 'dashboard.getRecentActivity',
-      'suggestions.approve', 'suggestions.reject', 'suggestions.countUnread',
+      'suggestions.approve', 'suggestions.reject', 'suggestions.respond',
+      'suggestions.update', 'suggestions.updateStatus', 'suggestions.countUnread',
+      'pqrsdf.getAll', 'pqrsdf.getById', 'pqrsdf.updateStatus', 'pqrsdf.respond',
       'settings.update', 'settings.updateMultiple', 'settings.getAll',
       'settings.reset', 'settings.backup', 'settings.restore', 'settings.testCloudinary',
       'uploads.deleteImage',
       'export.plants', 'export.statistics', 'export.collections',
       'posts.create', 'posts.update', 'posts.delete',
+      'backup.generate',
     ];
 
     if (adminServices.includes(service) && (!user || user.role !== 'admin')) {
@@ -219,11 +235,4 @@ const handleRequest = async (req, res) => {
       code: error.code,
       service: req.body.service,
       timestamp: new Date().toISOString()
-    });
-  }
-};
-
-module.exports = {
-  handleRequest
-};
-
+  

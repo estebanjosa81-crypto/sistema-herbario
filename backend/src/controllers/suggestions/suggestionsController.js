@@ -8,6 +8,7 @@ const countUnread = require('./countUnread');
 const getById     = require('./getById');
 const vote        = require('./vote');
 const getStats    = require('./getStats');
+const respond     = require('./respond');
 
 module.exports = {
   getAll,
@@ -19,4 +20,5 @@ module.exports = {
   getById,
   vote,
   getStats,
+  respond,
 };
