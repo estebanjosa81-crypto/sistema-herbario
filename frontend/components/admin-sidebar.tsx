@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Badge } from "@/components/ui/badge"
-import { LayoutDashboard, Leaf, BarChart, Users, Settings, LogOut, Menu, MessageSquare, Monitor, Newspaper } from "lucide-react"
+import { LayoutDashboard, Leaf, BarChart, Users, Settings, LogOut, Menu, MessageSquare, Monitor, Newspaper, FileText } from "lucide-react"
 import { useState, useEffect } from "react"
 import { cn } from "@/lib/utils"
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
@@ -88,6 +88,11 @@ export default function AdminSidebar() {
       label: "Sugerencias",
       icon: <MessageSquare className="h-5 w-5" />,
       badge: nuevasSugerencias > 0 ? nuevasSugerencias : undefined,
+    },
+    {
+      href: "/admin/pqrsdf",
+      label: "PQRSDF",
+      icon: <FileText className="h-5 w-5" />,
     },
     {
       href: "/admin/publicaciones",

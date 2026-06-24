@@ -143,6 +143,7 @@ const services = {
   'suggestions.updateStatus':suggestionsController.update,
   'suggestions.approve':     suggestionsController.approve,
   'suggestions.reject':      suggestionsController.reject,
+  'suggestions.respond':     suggestionsController.respond,
   'suggestions.countUnread': suggestionsController.countUnread,
   'suggestions.vote':        suggestionsController.vote,
   'suggestions.getStats':    suggestionsController.getStats,
@@ -201,8 +202,11 @@ const services = {
   // ===============================
   // SERVICIOS PQRSDF
   // ===============================
-  'pqrsdf.create': pqrsdfController.create,   // público — no requiere auth
-  'pqrsdf.getAll': pqrsdfController.getAll,   // admin
+  'pqrsdf.create':       pqrsdfController.create,       // público — no requiere auth
+  'pqrsdf.getAll':       pqrsdfController.getAll,       // admin
+  'pqrsdf.getById':      pqrsdfController.getById,      // admin
+  'pqrsdf.updateStatus': pqrsdfController.updateStatus, // admin
+  'pqrsdf.respond':      pqrsdfController.respond,      // admin
 
   // ===============================
   // SERVICIOS DE PUBLICACIONES
