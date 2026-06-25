@@ -54,6 +54,7 @@ const SERVICES_REQUIRING_AUTH = [
   
   // Exportación (requiere auth — gateado a Investigador/Admin en ROLE_GRANTS)
   'plants.export',
+  'plants.exportDwc',
 
   // Backup
   'backup.generate',
@@ -175,6 +176,7 @@ const handleRequest = async (req, res) => {
       'plants.update': ['admin', 'collector', 'investigador'],
       // Búsqueda avanzada y exportación de datos → Investigador, Admin
       'plants.export': ['admin', 'investigador'],
+      'plants.exportDwc': ['admin', 'investigador'],
     };
 
     // Gestión total del portal y roles → solo Admin

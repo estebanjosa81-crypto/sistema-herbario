@@ -4,6 +4,10 @@ import { useState, useEffect, useCallback, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem,
+  DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { DataTable, ColDef, FilterDef, BulkAction } from "@/components/ui/data-table"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { useToast } from "@/hooks/use-toast"
@@ -502,6 +506,30 @@ export default function AdminPlantas() {
     } finally { setExporting(false) }
   }
 
+  // Exportación Darwin Core (DwC-A / CSV-DwC / Excel) compatible con GBIF
+  const doExportDwc = async (format: "dwca" | "dwc-csv" | "excel", label: string) => {
+    setExporting(true)
+    try {
+      const res = await apiService.exportDwc(format, { search: search || undefined })
+      if (!res.success || !res.data) {
+        toast({ title: "Error al exportar", description: res.error ?? "Error desconocido", variant: "destructive" })
+        return
+      }
+      const { base64, filename, mimeType, count } = res.data
+      const bin = atob(base64)
+      const bytes = new Uint8Array(bin.length)
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i)
+      const blob = new Blob([bytes], { type: mimeType })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url; a.download = filename; a.click()
+      URL.revokeObjectURL(url)
+      toast({ title: `${label} exportado`, description: `${count} especímenes descargados` })
+    } catch (e: any) {
+      toast({ title: "Error al exportar", description: e.message, variant: "destructive" })
+    } finally { setExporting(false) }
+  }
+
   // ── Conservation status badge ──────────────────────────────────────────────
   const conservationCls = (cs?: string) => {
     if (!cs) return null
@@ -731,11 +759,42 @@ export default function AdminPlantas() {
         </div>
         <div className="flex gap-2 flex-wrap">
           {canExport && (
-            <Button variant="outline" size="sm" onClick={doExport} disabled={exporting}>
-              {exporting
-                ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Exportando…</>
-                : <><Download className="h-4 w-4 mr-2" />Exportar CSV</>}
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" disabled={exporting}>
+                  {exporting
+                    ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Exportando…</>
+                    : <><Download className="h-4 w-4 mr-2" />Exportar</>}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-64">
+                <DropdownMenuLabel>Compatible con GBIF</DropdownMenuLabel>
+                <DropdownMenuItem onClick={() => doExportDwc("dwca", "Darwin Core Archive")}>
+                  <Database className="h-4 w-4 mr-2" />
+                  <div className="flex flex-col">
+                    <span>Darwin Core Archive (.zip)</span>
+                    <span className="text-[11px] text-muted-foreground">Formato oficial para GBIF</span>
+                  </div>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => doExportDwc("dwc-csv", "Darwin Core CSV")}>
+                  <FileSpreadsheet className="h-4 w-4 mr-2" />
+                  <div className="flex flex-col">
+                    <span>Darwin Core CSV</span>
+                    <span className="text-[11px] text-muted-foreground">Términos DwC estandarizados</span>
+                  </div>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => doExportDwc("excel", "Excel")}>
+                  <FileSpreadsheet className="h-4 w-4 mr-2" />
+                  Excel (.xls)
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel>Uso interno</DropdownMenuLabel>
+                <DropdownMenuItem onClick={doExport}>
+                  <Download className="h-4 w-4 mr-2" />
+                  CSV (encabezados en español)
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
           {isAdmin && (
             <Button variant="outline" size="sm" onClick={doBackup} disabled={backingUp}>

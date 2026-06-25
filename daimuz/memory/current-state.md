@@ -48,6 +48,23 @@ violando la regla de `CLAUDE.md`. Ahora es soft delete de verdad:
 - Frontend: diálogo de borrado pide **motivo (por qué)**, filtro de estado
   **"Papelera (archivados)"**, acción **Restaurar**, y wording cambiado a "Archivar".
 
+### Exportación Darwin Core compatible con GBIF
+Antes solo había export CSV con encabezados en español (no ingerible por GBIF).
+Ahora el sistema cumple el flujo Darwin Core de la imagen:
+
+- **`backend/src/utils/zip.js`** — escritor ZIP (STORE + CRC32) sin dependencias
+  (validado con `unzip -t`).
+- **`backend/src/controllers/plants/exportDwc.js`** — servicio `plants.exportDwc`
+  con tres formatos (gateado a investigador/admin):
+  - `dwca` → **Darwin Core Archive** (.zip con `occurrence.txt` TSV de términos DwC,
+    `meta.xml` que mapea cada columna a su URI `http://rs.tdwg.org/dwc/terms/...`,
+    y `eml.xml` con metadatos del dataset). Formato oficial GBIF.
+  - `dwc-csv` → CSV con términos Darwin Core puros (occurrenceID, scientificName…).
+  - `excel` → SpreadsheetML (.xls) nativo de Excel.
+- Frontend `/admin/plantas`: menú "Exportar" con DwC-A, DwC-CSV, Excel, y el CSV
+  español previo. Descarga vía base64 → Blob.
+- El export CSV español original (`plants.export`) se conserva para uso interno.
+
 ### Rediseño visual del admin (Glassmorphism + Minimalismo Botánico)
 - `globals.css`: tokens glass (claro/oscuro) scoped a `.admin-shell`, fondo botánico,
   toda `Card` de shadcn → cristal automático.

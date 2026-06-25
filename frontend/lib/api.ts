@@ -560,6 +560,17 @@ class ApiService {
     return this.fetchApi('plants.export', { body: JSON.stringify(filters ?? {}) });
   }
 
+  // Exportación Darwin Core compatible con GBIF (DwC-A / CSV-DwC / Excel)
+  // Devuelve el archivo en base64 para descargar en el cliente.
+  async exportDwc(
+    format: 'dwca' | 'dwc-csv' | 'excel',
+    filters?: Record<string, string | undefined>
+  ): Promise<ApiResponse<{ base64: string; filename: string; mimeType: string; count: number; format: string }>> {
+    return this.fetchApi('plants.exportDwc', {
+      body: JSON.stringify({ ...(filters ?? {}), format })
+    });
+  }
+
   // ===============================
   // USUARIOS (gestión admin)
   // ===============================
