@@ -427,10 +427,19 @@ class ApiService {
     });
   }
 
-  // Eliminar planta (admin)
-  async deletePlant(id: number): Promise<ApiResponse<any>> {
+  // Archivar planta (soft delete, admin) — conserva el registro con motivo
+  async deletePlant(id: number, reason?: string): Promise<ApiResponse<any>> {
     const token = this.getToken();
     return this.fetchApi('plants.delete', {
+      headers: { 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({ id, reason: reason || null })
+    });
+  }
+
+  // Restaurar planta archivada (admin)
+  async restorePlant(id: number): Promise<ApiResponse<any>> {
+    const token = this.getToken();
+    return this.fetchApi('plants.restore', {
       headers: { 'Authorization': `Bearer ${token}` },
       body: JSON.stringify({ id })
     });

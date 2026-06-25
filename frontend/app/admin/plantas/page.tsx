@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useCallback, useRef } from "react"
 import { Button } from "@/components/ui/button"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 import { DataTable, ColDef, FilterDef, BulkAction } from "@/components/ui/data-table"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { useToast } from "@/hooks/use-toast"
@@ -13,7 +15,7 @@ import {
   Plus, Edit2, Eye, EyeOff, Trash2, Globe, FileSpreadsheet,
   Loader2, CheckCircle2, Upload, X,
   AlertCircle, BookOpen, MapPin, Calendar, ImageIcon, ExternalLink, DatabaseZap,
-  Download, Database
+  Download, Database, RotateCcw
 } from "lucide-react"
 import Link from "next/link"
 import { apiService } from "@/lib/api"
@@ -138,7 +140,7 @@ const STATUS_CFG: Record<string, { label: string; cls: string }> = {
   published: { label: "Publicado", cls: "bg-green-100 text-green-700 border-green-200" },
   draft:     { label: "Borrador",  cls: "bg-amber-100  text-amber-700  border-amber-200"  },
   review:    { label: "Revisión",  cls: "bg-sky-100    text-sky-700    border-sky-200"    },
-  deleted:   { label: "Eliminado", cls: "bg-red-100    text-red-700    border-red-200"    },
+  deleted:   { label: "Archivado", cls: "bg-red-100    text-red-700    border-red-200"    },
 }
 
 const fmtDate = (d?: string) =>
@@ -182,6 +184,7 @@ export default function AdminPlantas() {
   // Delete confirmation dialog
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<{ id?: number; name?: string; isBulk?: boolean } | null>(null)
+  const [deleteReason, setDeleteReason] = useState("")
   const [deleting, setDeleting] = useState(false)
 
   const load = useCallback(async () => {
@@ -237,27 +240,39 @@ export default function AdminPlantas() {
   const confirmDeleteAction = async () => {
     if (!deleteTarget) return
     setDeleting(true)
+    const reason = deleteReason.trim() || undefined
     try {
       if (deleteTarget.isBulk) {
-        for (const id of selected) await apiService.deletePlant(id as number)
-        toast({ title: "Eliminados", description: `${selected.size} espécimen(es) eliminados permanentemente.` })
+        for (const id of selected) await apiService.deletePlant(id as number, reason)
+        toast({ title: "Especímenes archivados", description: `${selected.size} espécimen(es) movidos a la papelera. Se conservan y pueden restaurarse.` })
         clearSelection()
       } else {
-        const res = await apiService.deletePlant(deleteTarget.id!)
+        const res = await apiService.deletePlant(deleteTarget.id!, reason)
         if (res.success) {
-          toast({ title: "Espécimen eliminado", description: deleteTarget.name ? `"${deleteTarget.name}" fue eliminado de la base de datos.` : "El espécimen fue eliminado." })
+          toast({ title: "Espécimen archivado", description: deleteTarget.name ? `"${deleteTarget.name}" se movió a la papelera. Se conserva y puede restaurarse.` : "El espécimen se archivó." })
           setDetailOpen(false)
         } else {
-          toast({ title: "Error al eliminar", description: res.error || "No se pudo eliminar el espécimen.", variant: "destructive" })
+          toast({ title: "Error al archivar", description: res.error || "No se pudo archivar el espécimen.", variant: "destructive" })
         }
       }
     } catch (e: any) {
-      toast({ title: "Error al eliminar", description: e.message || "Error de conexión.", variant: "destructive" })
+      toast({ title: "Error al archivar", description: e.message || "Error de conexión.", variant: "destructive" })
     } finally {
       setDeleting(false)
       setDeleteConfirmOpen(false)
       setDeleteTarget(null)
+      setDeleteReason("")
       load()
+    }
+  }
+
+  const restorePlant = async (id: number, name?: string) => {
+    const res = await apiService.restorePlant(id)
+    if (res.success) {
+      toast({ title: "Espécimen restaurado", description: name ? `"${name}" volvió como borrador.` : "Restaurado como borrador." })
+      load()
+    } else {
+      toast({ title: "Error al restaurar", description: res.error || "No se pudo restaurar.", variant: "destructive" })
     }
   }
 
@@ -636,21 +651,32 @@ export default function AdminPlantas() {
               <Edit2 className="h-3.5 w-3.5" />
             </Button>
           </Link>
-          {p.status === "published"
-            ? <Button variant="ghost" size="icon" className="h-7 w-7 text-amber-600" title="Despublicar"
-                onClick={e => { e.stopPropagation(); unpublishPlant(p.id) }}>
-                <EyeOff className="h-3.5 w-3.5" />
+          {p.status === "deleted" ? (
+            isAdmin && (
+              <Button variant="ghost" size="icon" className="h-7 w-7 text-green-600" title="Restaurar"
+                onClick={e => { e.stopPropagation(); restorePlant(p.id, p.scientific_name) }}>
+                <RotateCcw className="h-3.5 w-3.5" />
               </Button>
-            : <Button variant="ghost" size="icon" className="h-7 w-7 text-green-600" title="Publicar"
-                onClick={e => { e.stopPropagation(); publishPlant(p.id) }}>
-                <Globe className="h-3.5 w-3.5" />
-              </Button>
-          }
-          {isAdmin && (
-            <Button variant="ghost" size="icon" className="h-7 w-7 text-red-500 hover:text-red-600" title="Eliminar"
-              onClick={e => { e.stopPropagation(); deletePlant(p.id, p.scientific_name) }}>
-              <Trash2 className="h-3.5 w-3.5" />
-            </Button>
+            )
+          ) : (
+            <>
+              {p.status === "published"
+                ? <Button variant="ghost" size="icon" className="h-7 w-7 text-amber-600" title="Despublicar"
+                    onClick={e => { e.stopPropagation(); unpublishPlant(p.id) }}>
+                    <EyeOff className="h-3.5 w-3.5" />
+                  </Button>
+                : <Button variant="ghost" size="icon" className="h-7 w-7 text-green-600" title="Publicar"
+                    onClick={e => { e.stopPropagation(); publishPlant(p.id) }}>
+                    <Globe className="h-3.5 w-3.5" />
+                  </Button>
+              }
+              {isAdmin && (
+                <Button variant="ghost" size="icon" className="h-7 w-7 text-red-500 hover:text-red-600" title="Archivar"
+                  onClick={e => { e.stopPropagation(); deletePlant(p.id, p.scientific_name) }}>
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              )}
+            </>
           )}
         </div>
       ),
@@ -664,6 +690,7 @@ export default function AdminPlantas() {
         { value: "published", label: "Publicados" },
         { value: "draft",     label: "Borradores" },
         { value: "review",    label: "En revisión" },
+        { value: "deleted",   label: "Papelera (archivados)" },
         { value: "all",       label: "Todos" },
       ],
     },
@@ -1337,31 +1364,42 @@ export default function AdminPlantas() {
       <Dialog open={deleteConfirmOpen} onOpenChange={open => { if (!deleting) setDeleteConfirmOpen(open) }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-red-600">
+            <DialogTitle className="flex items-center gap-2 text-amber-600">
               <Trash2 className="h-5 w-5" />
-              Eliminar espécimen
+              Archivar espécimen
             </DialogTitle>
             <DialogDescription className="pt-1">
               {deleteTarget?.isBulk
-                ? `Estás a punto de eliminar ${selected.size} espécimen(es) permanentemente. Esta acción no se puede deshacer.`
-                : <>Estás a punto de eliminar <span className="font-medium text-foreground italic">{deleteTarget?.name ?? 'este espécimen'}</span> permanentemente. Esta acción no se puede deshacer.</>
+                ? `Vas a archivar ${selected.size} espécimen(es). No se borran de la base de datos: se mueven a la papelera y pueden restaurarse.`
+                : <>Vas a archivar <span className="font-medium text-foreground italic">{deleteTarget?.name ?? 'este espécimen'}</span>. No se borra de la base de datos: se mueve a la papelera y puede restaurarse.</>
               }
             </DialogDescription>
           </DialogHeader>
+          <div className="space-y-1.5 pt-1">
+            <Label htmlFor="del-reason" className="text-sm">Motivo (por qué) — opcional pero recomendado</Label>
+            <Textarea
+              id="del-reason"
+              value={deleteReason}
+              onChange={e => setDeleteReason(e.target.value)}
+              placeholder="Ej: duplicado, dato erróneo, espécimen reclasificado…"
+              rows={3}
+            />
+            <p className="text-xs text-muted-foreground">Queda registrado junto con quién y cuándo, para trazabilidad.</p>
+          </div>
           <div className="flex justify-end gap-2 pt-2">
             <Button
               variant="outline"
-              onClick={() => setDeleteConfirmOpen(false)}
+              onClick={() => { setDeleteConfirmOpen(false); setDeleteReason("") }}
               disabled={deleting}
             >
               Cancelar
             </Button>
             <Button
-              variant="destructive"
               onClick={confirmDeleteAction}
               disabled={deleting}
+              className="bg-amber-600 hover:bg-amber-700 text-white"
             >
-              {deleting ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Eliminando…</> : "Eliminar definitivamente"}
+              {deleting ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Archivando…</> : "Archivar"}
             </Button>
           </div>
         </DialogContent>

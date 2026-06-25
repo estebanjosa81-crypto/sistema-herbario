@@ -33,6 +33,21 @@ de la matriz: **user < collector < investigador < admin**.
     `users.toggleStatus` sigue sin registrar en el gateway).
   - Nueva página real `/admin/estadisticas` (usa `public.getStats`) para investigador/admin.
 
+### Soft Delete real en `plants` (Trazabilidad total)
+Antes `plants.delete` hacía **hard delete** (`DELETE FROM plants` + imágenes),
+violando la regla de `CLAUDE.md`. Ahora es soft delete de verdad:
+
+- `deletePlant` → `UPDATE status='deleted', deleted_at=NOW(), deleted_by=?, deletion_reason=?`
+  (conserva el registro y las imágenes). `bulkDelete` ahora es un soft delete real
+  (antes era alias del hard delete). Nuevo `restorePlant` (`status='draft'`, limpia metadatos).
+- Migración `003_soft_delete_metadata.sql`: añade `deleted_by` (FK users) y `deletion_reason`.
+- `plants.restore` registrado en el gateway (admin). El **hard delete** real queda
+  reservado a `purgeDeleted` (papelera → "Limpiar eliminados", admin).
+- Lecturas públicas (getAll/advancedSearch/getForMap/featured/export) ya excluían
+  `status='deleted'`; ahora cobra sentido.
+- Frontend: diálogo de borrado pide **motivo (por qué)**, filtro de estado
+  **"Papelera (archivados)"**, acción **Restaurar**, y wording cambiado a "Archivar".
+
 ### Rediseño visual del admin (Glassmorphism + Minimalismo Botánico)
 - `globals.css`: tokens glass (claro/oscuro) scoped a `.admin-shell`, fondo botánico,
   toda `Card` de shadcn → cristal automático.

@@ -165,10 +165,13 @@ CREATE TABLE plants (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP NULL,
+    deleted_by INT NULL COMMENT 'Usuario que archivó el registro (soft delete)',
+    deletion_reason VARCHAR(500) NULL COMMENT 'Motivo del archivado (por qué)',
 
     FOREIGN KEY (collector_user_id) REFERENCES users(id) ON DELETE SET NULL,
     FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL,
     FOREIGN KEY (reviewed_by) REFERENCES users(id) ON DELETE SET NULL,
+    FOREIGN KEY (deleted_by) REFERENCES users(id) ON DELETE SET NULL,
 
     INDEX idx_scientific_name (scientific_name),
     INDEX idx_family (family),

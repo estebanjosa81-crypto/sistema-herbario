@@ -52,6 +52,7 @@ const services = {
   'plants.update': plantsController.update,
   'plants.delete': plantsController.delete,
   'plants.bulkDelete': plantsController.bulkDelete,
+  'plants.restore': plantsController.restore,
   
   // Búsqueda y filtrado avanzado
   'plants.search': plantsController.search,

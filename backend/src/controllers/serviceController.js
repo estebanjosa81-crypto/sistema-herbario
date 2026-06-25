@@ -22,6 +22,7 @@ const SERVICES_REQUIRING_AUTH = [
   'plants.create',
   'plants.update',
   'plants.delete',
+  'plants.restore',
   'plants.import',
   'plants.bulkDelete',
   
@@ -179,7 +180,7 @@ const handleRequest = async (req, res) => {
     // Gestión total del portal y roles → solo Admin
     const adminServices = [
       'users.getAll', 'users.getById', 'users.create', 'users.update', 'users.delete', 'users.toggleStatus',
-      'plants.delete', 'plants.import', 'plants.bulkDelete',
+      'plants.delete', 'plants.restore', 'plants.import', 'plants.bulkDelete',
       'dashboard.getStats', 'dashboard.getRecentActivity',
       'suggestions.approve', 'suggestions.reject', 'suggestions.respond',
       'suggestions.update', 'suggestions.updateStatus', 'suggestions.countUnread',
