@@ -62,9 +62,26 @@ const match = async (data) => {
   }
 
   // Extraer autoría: scientificName sin el canonicalName
-  const authorship = (d.scientificName && d.canonicalName)
-    ? d.scientificName.replace(d.canonicalName, '').trim()
-    : '';
+  let authorship = d.authorship
+    || ((d.scientificName && d.canonicalName)
+        ? d.scientificName.replace(d.canonicalName, '').trim()
+        : '');
+
+  // El endpoint /species/match no siempre incluye la autoría dentro de
+  // scientificName. Si quedó vacía, la consultamos en el detalle de la especie
+  // (/species/{usageKey}), que sí devuelve el campo `authorship` de forma fiable.
+  if (!authorship && d.usageKey) {
+    try {
+      const detRes = await fetch(`${GBIF_BASE}/species/${d.usageKey}`, { headers: { Accept: 'application/json' } });
+      if (detRes.ok) {
+        const det = await detRes.json();
+        authorship = det.authorship
+          || ((det.scientificName && det.canonicalName)
+              ? det.scientificName.replace(det.canonicalName, '').trim()
+              : '');
+      }
+    } catch { /* si falla, dejamos la autoría vacía */ }
+  }
 
   // Epíteto específico: segunda palabra del canonicalName
   const epithet = d.canonicalName?.split(' ')[1] || d.species?.split(' ')[1] || '';

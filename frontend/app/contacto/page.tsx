@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -154,6 +154,35 @@ export default function ContactoPage() {
 
   const set = (key: keyof FormState, value: any) =>
     setForm(prev => ({ ...prev, [key]: value }))
+
+  // ── Ubicación en cascada (geo.* del backend, igual que /admin/plantas/nueva) ──
+  const [geoCountries, setGeoCountries] = useState<string[]>([])
+  const [geoStates, setGeoStates] = useState<string[]>([])
+  const [geoCities, setGeoCities] = useState<string[]>([])
+  const [geoLoadingStates, setGeoLoadingStates] = useState(false)
+  const [geoLoadingCities, setGeoLoadingCities] = useState(false)
+
+  useEffect(() => {
+    apiService.geoGetCountries().then(res => {
+      if (res.success && res.data) setGeoCountries(res.data.countries)
+    }).catch(() => {})
+  }, [])
+
+  useEffect(() => {
+    if (!form.pais) { setGeoStates([]); setGeoCities([]); return }
+    setGeoLoadingStates(true); setGeoStates([]); setGeoCities([])
+    apiService.geoGetStates(form.pais).then(res => {
+      if (res.success && res.data) setGeoStates(res.data.states)
+    }).catch(() => {}).finally(() => setGeoLoadingStates(false))
+  }, [form.pais])
+
+  useEffect(() => {
+    if (!form.pais || !form.departamento) { setGeoCities([]); return }
+    setGeoLoadingCities(true); setGeoCities([])
+    apiService.geoGetCities(form.pais, form.departamento).then(res => {
+      if (res.success && res.data) setGeoCities(res.data.cities)
+    }).catch(() => {}).finally(() => setGeoLoadingCities(false))
+  }, [form.pais, form.departamento])
 
   const contactEmail = cfg.contactEmail || "herbario@herbariodigital.com"
   const instAddress  = cfg.institutionAddress || "Mocoa, Putumayo, Colombia"
@@ -462,31 +491,51 @@ export default function ContactoPage() {
 
                     <div className="grid grid-cols-3 gap-3">
                       <Field label="País" id="pais" required>
-                        <Input
-                          id="pais"
+                        <Select
                           value={form.pais}
-                          onChange={e => set("pais", e.target.value)}
-                        />
-                      </Field>
-                      <Field label="Departamento" id="departamento">
-                        <Select value={form.departamento} onValueChange={v => set("departamento", v)}>
-                          <SelectTrigger id="departamento">
+                          onValueChange={v => setForm(prev => ({ ...prev, pais: v, departamento: "", ciudad: "" }))}
+                        >
+                          <SelectTrigger id="pais">
                             <SelectValue placeholder="Selecciona" />
                           </SelectTrigger>
                           <SelectContent>
-                            {DEPARTAMENTOS.map(d => (
+                            {geoCountries.map(c => (
+                              <SelectItem key={c} value={c}>{c}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </Field>
+                      <Field label="Departamento" id="departamento">
+                        <Select
+                          value={form.departamento}
+                          onValueChange={v => setForm(prev => ({ ...prev, departamento: v, ciudad: "" }))}
+                          disabled={!form.pais || geoLoadingStates}
+                        >
+                          <SelectTrigger id="departamento">
+                            <SelectValue placeholder={geoLoadingStates ? "Cargando…" : "Selecciona"} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {geoStates.map(d => (
                               <SelectItem key={d} value={d}>{d}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
                       </Field>
                       <Field label="Ciudad" id="ciudad">
-                        <Input
-                          id="ciudad"
-                          placeholder="Ej. Mocoa"
+                        <Select
                           value={form.ciudad}
-                          onChange={e => set("ciudad", e.target.value)}
-                        />
+                          onValueChange={v => set("ciudad", v)}
+                          disabled={!form.departamento || geoLoadingCities}
+                        >
+                          <SelectTrigger id="ciudad">
+                            <SelectValue placeholder={geoLoadingCities ? "Cargando…" : "Selecciona"} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {geoCities.map(c => (
+                              <SelectItem key={c} value={c}>{c}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </Field>
                     </div>
 

@@ -163,9 +163,9 @@ export default function AdminPlantas() {
   const [activeFilters, setAF] = useState<Record<string, string>>({})
   const [sort, setSort] = useState<{ id: string; dir: "asc" | "desc" } | null>(null)
   const [page, setPage] = useState(1)
-  const [limit, setLimit] = useState(25)
+  const [limit, setLimit] = useState(10)
   const [pagination, setPagination] = useState<PaginationData>({
-    page: 1, limit: 25, total: 0, totalPages: 0, hasNext: false, hasPrev: false,
+    page: 1, limit: 10, total: 0, totalPages: 0, hasNext: false, hasPrev: false,
   })
   const [selected, setSelected] = useState<Set<string | number>>(new Set())
   const [bulkLoading, setBulkLoading] = useState(false)

@@ -36,8 +36,6 @@ const PLANTILLAS_DEFAULT: Plantilla[] = [
     campos: {
       institutionCode: 'Institución Universitaria del Putumayo (UNIP)',
       institutionID: '800247940',
-      basisOfRecord: 'preservedSpecimen',
-      type: 'physicalObject',
     },
   },
   // Colección
@@ -601,8 +599,6 @@ export default function NuevaPlantaPage() {
   const CAMPOS_INSTITUCION: { key: string; label: string; placeholder: string }[] = [
     { key: 'institutionCode', label: 'Nombre de la institución', placeholder: 'Institución Universitaria del Putumayo (UNIP)' },
     { key: 'institutionID',   label: 'NIT / ID institución',     placeholder: '800247940' },
-    { key: 'basisOfRecord',   label: 'Base del registro',        placeholder: 'preservedSpecimen' },
-    { key: 'type',            label: 'Tipo',                     placeholder: 'physicalObject' },
   ]
 
   const CAMPOS_COLECCION: { key: string; label: string; placeholder: string }[] = [
